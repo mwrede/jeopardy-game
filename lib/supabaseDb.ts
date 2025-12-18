@@ -206,12 +206,12 @@ export interface Question {
 
 export async function getQuestionsForDate(date: string): Promise<Question[]> {
   try {
-    console.log('Fetching questions from Supabase for date:', date)
+    console.log('Fetching all questions from Supabase (ignoring date)')
     
+    // Fetch all questions regardless of date
     const { data, error } = await supabase
       .from('questions')
       .select('*')
-      .eq('game_date', date)
       .order('category', { ascending: true })
       .order('value', { ascending: true, nullsFirst: false })
 
@@ -220,13 +220,14 @@ export async function getQuestionsForDate(date: string): Promise<Question[]> {
       throw error
     }
 
-    console.log(`Found ${data?.length || 0} questions for date ${date}`)
+    console.log(`Found ${data?.length || 0} total questions in Supabase`)
     
     if (data && data.length > 0) {
       console.log('Sample question:', {
         category: data[0].category,
         question_type: data[0].question_type,
         value: data[0].value,
+        game_date: data[0].game_date,
       })
     }
 
@@ -239,22 +240,27 @@ export async function getQuestionsForDate(date: string): Promise<Question[]> {
 
 export async function getFinalJeopardyForDate(date: string): Promise<Question | null> {
   try {
+    console.log('Fetching Final Jeopardy from Supabase (ignoring date)')
+    
+    // Fetch Final Jeopardy regardless of date
     const { data, error } = await supabase
       .from('questions')
       .select('*')
-      .eq('game_date', date)
       .eq('question_type', 'Final Jeopardy')
+      .limit(1)
       .single()
 
     if (error) {
       if (error.code === 'PGRST116') {
         // No rows found
+        console.log('No Final Jeopardy found')
         return null
       }
       console.error('Error fetching Final Jeopardy:', error)
       throw error
     }
 
+    console.log('Final Jeopardy found:', data?.category)
     return data || null
   } catch (error) {
     console.error('Unexpected error in getFinalJeopardyForDate:', error)

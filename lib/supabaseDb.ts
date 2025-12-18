@@ -84,7 +84,7 @@ export async function hasPlayedToday(userId: string, date: string): Promise<bool
   return (data?.length ?? 0) > 0
 }
 
-export async function getLeaderboard(date: string, limit: number = 10): Promise<LeaderboardEntry[]> {
+export async function getLeaderboard(date: string, limit: number = 1000): Promise<LeaderboardEntry[]> {
   // Get all games for today
   const { data: games, error: gamesError } = await supabase
     .from('games')
@@ -125,7 +125,8 @@ export async function getLeaderboard(date: string, limit: number = 10): Promise<
     throw usersError
   }
 
-  // Combine data and sort by score
+  // Combine data, sort by score (descending), and assign ranks
+  // Rank is calculated consistently: same score = same rank, next rank skips
   const leaderboard: LeaderboardEntry[] = users
     .map((user) => {
       const scoreData = userScores.get(user.id)
@@ -137,11 +138,25 @@ export async function getLeaderboard(date: string, limit: number = 10): Promise<
         completed_at: scoreData!.completed_at,
       }
     })
-    .sort((a, b) => b.score - a.score)
-    .map((entry, index) => ({
-      ...entry,
-      rank: index + 1,
-    }))
+    .sort((a, b) => {
+      // Sort by score descending, then by completed_at ascending (earlier = better rank)
+      if (b.score !== a.score) {
+        return b.score - a.score
+      }
+      return new Date(a.completed_at).getTime() - new Date(b.completed_at).getTime()
+    })
+    .map((entry, index, array) => {
+      // Calculate rank: same score = same rank
+      let rank = index + 1
+      if (index > 0 && entry.score === array[index - 1].score) {
+        // Same score as previous entry, use same rank
+        rank = array[index - 1].rank || index + 1
+      }
+      return {
+        ...entry,
+        rank: rank,
+      }
+    })
     .slice(0, limit)
 
   return leaderboard

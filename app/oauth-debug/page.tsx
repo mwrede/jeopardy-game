@@ -1,0 +1,112 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+
+export default function OAuthDebugPage() {
+  const [config, setConfig] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/auth-check')
+      .then(res => res.json())
+      .then(data => {
+        setConfig(data)
+        setLoading(false)
+      })
+      .catch(err => {
+        console.error('Error fetching config:', err)
+        setLoading(false)
+      })
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-gray-600">Loading configuration...</div>
+      </div>
+    )
+  }
+
+  if (!config) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-red-600">Failed to load configuration</div>
+      </div>
+    )
+  }
+
+  const redirectUri = config.redirectUri?.expected || 'Not configured'
+
+  return (
+    <div className="min-h-screen bg-gray-100 p-8">
+      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-8">
+        <h1 className="text-3xl font-bold mb-6 text-purple-800">OAuth Configuration Debug</h1>
+        
+        <div className="space-y-6">
+          <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-6">
+            <h2 className="text-xl font-bold text-yellow-800 mb-4">⚠️ Redirect URI Mismatch Fix</h2>
+            <p className="text-yellow-700 mb-4">
+              Copy this <strong>EXACT</strong> URL and add it to Google Cloud Console:
+            </p>
+            <div className="bg-white border-2 border-yellow-300 rounded p-4 mb-4">
+              <code className="text-lg font-mono text-purple-800 break-all">
+                {redirectUri}
+              </code>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded p-4">
+              <h3 className="font-bold text-blue-800 mb-2">Step-by-step instructions:</h3>
+              <ol className="list-decimal list-inside space-y-2 text-blue-700">
+                <li>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="underline">Google Cloud Console → Credentials</a></li>
+                <li>Click on your OAuth 2.0 Client ID</li>
+                <li>Under &quot;Authorized redirect URIs&quot;, click &quot;+ ADD URI&quot;</li>
+                <li>Paste the URL above (the one in the purple box)</li>
+                <li>Click &quot;SAVE&quot;</li>
+                <li>Wait 2-3 minutes for changes to propagate</li>
+                <li>Try signing in again</li>
+              </ol>
+            </div>
+          </div>
+
+          <div className="border-t pt-6">
+            <h2 className="text-xl font-bold mb-4">Current Configuration</h2>
+            
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold text-gray-700 mb-2">NEXTAUTH_URL</h3>
+                <div className="bg-gray-50 p-3 rounded">
+                  <code className="text-sm">{config.nextAuth?.url || 'Not set'}</code>
+                  {config.nextAuth?.hasTrailingSlash && (
+                    <p className="text-red-600 text-sm mt-1">⚠️ Has trailing slash - this may cause issues!</p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-gray-700 mb-2">Expected Callback URL</h3>
+                <div className="bg-gray-50 p-3 rounded">
+                  <code className="text-sm break-all">{redirectUri}</code>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-gray-700 mb-2">Google OAuth</h3>
+                <div className="bg-gray-50 p-3 rounded space-y-1">
+                  <p className="text-sm">Client ID: {config.google?.hasClientId ? '✅ Set' : '❌ Missing'}</p>
+                  <p className="text-sm">Client Secret: {config.google?.hasClientSecret ? '✅ Set' : '❌ Missing'}</p>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-gray-700 mb-2">NextAuth Secret</h3>
+                <div className="bg-gray-50 p-3 rounded">
+                  <p className="text-sm">{config.nextAuth?.hasSecret ? '✅ Set' : '❌ Missing'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+

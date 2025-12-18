@@ -8,9 +8,10 @@ export async function GET() {
   
   const checks = {
     google: {
-      hasClientId: !!process.env.GOOGLE_CLIENT_ID,
-      hasClientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
-      clientIdPrefix: process.env.GOOGLE_CLIENT_ID?.substring(0, 30) || 'missing',
+      hasClientId: !!(process.env.NEW_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID),
+      hasClientSecret: !!(process.env.NEW_GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET),
+      clientIdPrefix: (process.env.NEW_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID)?.substring(0, 30) || 'missing',
+      usingNewPrefix: !!process.env.NEW_GOOGLE_CLIENT_ID,
     },
     nextAuth: {
       hasUrl: !!process.env.NEXTAUTH_URL,

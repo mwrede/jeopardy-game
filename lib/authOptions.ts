@@ -3,16 +3,17 @@ import GoogleProvider from 'next-auth/providers/google'
 import { createOrUpdateUser } from '@/lib/supabaseDb'
 
 // Validate Google OAuth credentials
-const clientId = process.env.GOOGLE_CLIENT_ID
-const clientSecret = process.env.GOOGLE_CLIENT_SECRET
+// Support both NEW_GOOGLE_CLIENT_ID (Vercel) and GOOGLE_CLIENT_ID (local dev)
+const clientId = process.env.NEW_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID
+const clientSecret = process.env.NEW_GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET
 
 if (!clientId) {
-  console.error('Missing GOOGLE_CLIENT_ID environment variable')
-  throw new Error('GOOGLE_CLIENT_ID is required')
+  console.error('Missing NEW_GOOGLE_CLIENT_ID or GOOGLE_CLIENT_ID environment variable')
+  throw new Error('Google Client ID is required')
 }
 if (!clientSecret) {
-  console.error('Missing GOOGLE_CLIENT_SECRET environment variable')
-  throw new Error('GOOGLE_CLIENT_SECRET is required')
+  console.error('Missing NEW_GOOGLE_CLIENT_SECRET or GOOGLE_CLIENT_SECRET environment variable')
+  throw new Error('Google Client Secret is required')
 }
 
 // Log for debugging (first few chars only for security)

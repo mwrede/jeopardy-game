@@ -33,14 +33,23 @@ function LoginForm() {
             </p>
             {error === 'redirect_uri_mismatch' && (
               <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">
-                <p className="font-semibold text-yellow-800 mb-1">To fix this:</p>
-                <ol className="list-decimal list-inside text-yellow-700 space-y-1">
-                  <li>Go to Google Cloud Console → APIs & Services → Credentials</li>
+                <p className="font-semibold text-yellow-800 mb-2">To fix this:</p>
+                <ol className="list-decimal list-inside text-yellow-700 space-y-1 mb-3">
+                  <li>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="underline text-blue-600">Google Cloud Console → Credentials</a></li>
                   <li>Click on your OAuth 2.0 Client ID</li>
-                  <li>Under &quot;Authorized redirect URIs&quot;, add exactly:</li>
-                  <li className="ml-4 font-mono bg-white p-1 rounded">https://raccoonjeopardy.vercel.app/api/auth/callback/google</li>
-                  <li>Save and wait a few minutes for changes to propagate</li>
+                  <li>Under &quot;Authorized redirect URIs&quot;, click &quot;+ ADD URI&quot;</li>
+                  <li>Copy and paste this EXACT URL (no trailing slash, no spaces):</li>
                 </ol>
+                <div className="bg-white border-2 border-yellow-300 rounded p-2 mb-3">
+                  <code className="text-xs font-mono break-all text-purple-800">https://raccoonjeopardy.vercel.app/api/auth/callback/google</code>
+                </div>
+                <p className="text-yellow-700 text-xs mb-2">⚠️ Common mistakes:</p>
+                <ul className="list-disc list-inside text-yellow-600 text-xs space-y-0.5 ml-2">
+                  <li>Adding trailing slash: <code className="bg-red-100 px-1">/google/</code> ❌</li>
+                  <li>Wrong path: <code className="bg-red-100 px-1">/api/auth/callback</code> ❌</li>
+                  <li>HTTP instead of HTTPS ❌</li>
+                </ul>
+                <p className="text-yellow-700 text-xs mt-2">After saving, wait 2-3 minutes before trying again.</p>
               </div>
             )}
           </div>

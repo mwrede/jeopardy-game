@@ -12,35 +12,35 @@ if (!supabaseUrl || !supabaseKey) {
   // Vercel sets VERCEL=1 during builds, and we can check for other build indicators
   const isBuildTime = process.env.VERCEL === '1' || 
                       process.env.NEXT_PHASE === 'phase-production-build' ||
-                      process.env.NEXT_PHASE === 'phase-development-build' ||
-                      !process.env.VERCEL_ENV // VERCEL_ENV is only set at runtime
+                      process.env.NEXT_PHASE === 'phase-development-build'
   
-  if (isBuildTime) {
-    // During build, create a client that won't make network requests
-    // Use a mock fetch that returns empty results
-    const mockFetch = async () => {
-      return new Response(JSON.stringify({ data: [], error: null }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      })
+  // Use a mock fetch that returns empty results to prevent network requests
+  const mockFetch = async () => {
+    return new Response(JSON.stringify({ data: [], error: null }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+  
+  // Create a placeholder client that won't make network requests
+  // This allows the app to load even if env vars are missing
+  supabase = createClient(
+    'https://placeholder.supabase.co',
+    'placeholder-key',
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+      global: {
+        fetch: mockFetch as any,
+      },
     }
-    
-    supabase = createClient(
-      'https://build-time-placeholder.supabase.co',
-      'build-time-placeholder-key',
-      {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-        },
-        global: {
-          fetch: mockFetch as any,
-        },
-      }
-    )
-  } else {
-    // At runtime, throw error if env vars are missing
-    throw new Error('Missing Supabase environment variables')
+  )
+  
+  // Log warning in development
+  if (!isBuildTime && process.env.NODE_ENV === 'development') {
+    console.warn('⚠️ Missing Supabase environment variables. Using placeholder client.')
   }
 } else {
   supabase = createClient(supabaseUrl, supabaseKey)

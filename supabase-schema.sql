@@ -63,14 +63,13 @@ BEGIN
   WHERE u.id = NEW.user_id
   ON CONFLICT (user_id) 
   DO UPDATE SET
-    -- Only update if this is a more recent game or a better score
+    -- Always update to the most recent game (not best score)
     score = CASE 
-      WHEN NEW.completed_at > leaderboard.completed_at THEN NEW.score
-      WHEN NEW.score > leaderboard.score AND NEW.completed_at = leaderboard.completed_at THEN NEW.score
+      WHEN NEW.completed_at >= leaderboard.completed_at THEN NEW.score
       ELSE leaderboard.score
     END,
     completed_at = CASE 
-      WHEN NEW.completed_at > leaderboard.completed_at THEN NEW.completed_at
+      WHEN NEW.completed_at >= leaderboard.completed_at THEN NEW.completed_at
       ELSE leaderboard.completed_at
     END,
     name = COALESCE((SELECT name FROM users WHERE id = NEW.user_id), leaderboard.name),

@@ -73,4 +73,5 @@ export interface LeaderboardEntry {
   image: string | null
   score: number
   completed_at: string
+  rank: number
 }

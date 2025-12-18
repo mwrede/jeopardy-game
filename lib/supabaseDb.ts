@@ -125,7 +125,7 @@ export async function getLeaderboard(date: string, limit: number = 10): Promise<
     throw usersError
   }
 
-  // Combine data
+  // Combine data and sort by score
   const leaderboard: LeaderboardEntry[] = users
     .map((user) => {
       const scoreData = userScores.get(user.id)
@@ -138,6 +138,10 @@ export async function getLeaderboard(date: string, limit: number = 10): Promise<
       }
     })
     .sort((a, b) => b.score - a.score)
+    .map((entry, index) => ({
+      ...entry,
+      rank: index + 1,
+    }))
     .slice(0, limit)
 
   return leaderboard

@@ -51,12 +51,10 @@ export default function Home() {
 
           // Find user's rank and score
           if (session?.user?.id) {
-            const rank = leaderboardData.findIndex((entry: any) => entry.user_id === session.user?.id)
-            setUserRank(rank !== -1 ? rank + 1 : null)
-
             const userEntry = leaderboardData.find((entry: any) => entry.user_id === session.user?.id)
             if (userEntry) {
               setFinalScore(userEntry.score)
+              setUserRank(userEntry.rank || null)
             }
           }
         }
@@ -96,10 +94,12 @@ export default function Home() {
       const leaderboardData = await leaderboardResponse.json()
       setLeaderboard(leaderboardData.slice(0, 3)) // Get top 3
 
-      // Find user's rank
+      // Find user's rank from leaderboard data
       if (session?.user?.id) {
-        const rank = leaderboardData.findIndex((entry: any) => entry.user_id === session.user?.id)
-        setUserRank(rank !== -1 ? rank + 1 : null)
+        const userEntry = leaderboardData.find((entry: any) => entry.user_id === session.user?.id)
+        if (userEntry) {
+          setUserRank(userEntry.rank || null)
+        }
       }
     } catch (error) {
       console.error('Failed to save score:', error)
@@ -139,24 +139,22 @@ export default function Home() {
           <div className="bg-white rounded-lg shadow-lg p-12">
             <div className="text-center mb-8">
               <h2 className="text-5xl font-bold mb-6 text-purple-800">Game Complete!</h2>
-              <div className={`text-7xl font-bold mb-4 ${finalScore >= 0 ? 'text-purple-600' : 'text-red-600'}`}>
+              <div className={`text-7xl font-bold mb-2 ${finalScore >= 0 ? 'text-purple-600' : 'text-red-600'}`}>
                 ${finalScore.toLocaleString()}
               </div>
+              {userRank !== null && (
+                <div className="mb-4">
+                  <p className="text-3xl font-bold text-purple-600">
+                    Rank: #{userRank}
+                  </p>
+                </div>
+              )}
               {saving ? (
                 <p className="text-gray-600 mb-6">Saving your score...</p>
               ) : (
-                <>
-                  <p className="text-gray-600 mb-4">
-                    {hasPlayedToday ? "You've already played today!" : "Your score has been saved to the leaderboard!"}
-                  </p>
-                  {userRank !== null && (
-                    <div className="mb-6">
-                      <p className="text-3xl font-bold text-purple-600">
-                        Your Rank: #{userRank}
-                      </p>
-                    </div>
-                  )}
-                </>
+                <p className="text-gray-600 mb-6">
+                  {hasPlayedToday ? "You've already played today!" : "Your score has been saved to the leaderboard!"}
+                </p>
               )}
             </div>
 

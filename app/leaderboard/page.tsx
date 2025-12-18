@@ -11,6 +11,7 @@ interface LeaderboardEntry {
   image: string | null
   score: number
   completed_at: string
+  rank: number
 }
 
 export default function LeaderboardPage() {
@@ -33,10 +34,10 @@ export default function LeaderboardPage() {
         const data = await response.json()
         setLeaderboard(data)
 
-        // Find user's rank
+        // Find user's rank from the data
         if (session?.user?.id) {
-          const rank = data.findIndex((entry: LeaderboardEntry) => entry.user_id === session.user?.id)
-          setUserRank(rank !== -1 ? rank + 1 : null)
+          const userEntry = data.find((entry: LeaderboardEntry) => entry.user_id === session.user?.id)
+          setUserRank(userEntry?.rank || null)
         }
       } catch (error) {
         console.error('Failed to fetch leaderboard:', error)
@@ -81,53 +82,73 @@ export default function LeaderboardPage() {
               <p>Be the first to play and claim the top spot.</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {leaderboard.map((entry, index) => {
-                const isCurrentUser = session?.user?.id === entry.user_id
-                return (
-                  <div
-                    key={entry.user_id}
-                    className={`flex items-center gap-4 p-4 rounded-lg transition-all ${
-                      index === 0
-                        ? 'bg-gradient-to-r from-purple-400 to-purple-500 text-white shadow-lg'
-                        : index === 1
-                        ? 'bg-gradient-to-r from-purple-300 to-purple-400 text-white'
-                        : index === 2
-                        ? 'bg-gradient-to-r from-purple-200 to-purple-300 text-purple-900'
-                        : 'bg-purple-50 text-gray-800'
-                    } ${isCurrentUser ? 'ring-4 ring-purple-600' : ''}`}
-                  >
-                  <div className="text-2xl font-bold w-16 text-center">
-                    {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
-                  </div>
-
-                  <div className="flex items-center gap-3 flex-1">
-                    {entry.image ? (
-                      <img
-                        src={entry.image}
-                        alt={entry.name}
-                        className="w-12 h-12 rounded-full border-2 border-white"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold border-2 border-white">
-                        {entry.name.split(' ')[0].charAt(0)}
-                      </div>
-                    )}
-                    <div>
-                      <p className="font-bold text-lg">{entry.name.split(' ')[0]}</p>
-                      <p className="text-sm opacity-75">Rank #{index + 1}</p>
-                    </div>
-                  </div>
-
-                  <div className="text-right">
-                    <p className="text-2xl font-bold">${entry.score.toLocaleString()}</p>
-                    {isCurrentUser && (
-                      <p className="text-sm font-semibold opacity-90">You</p>
-                    )}
-                  </div>
-                </div>
-                )
-              })}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b-2 border-purple-300">
+                    <th className="text-left py-3 px-4 font-bold text-purple-800">Rank</th>
+                    <th className="text-left py-3 px-4 font-bold text-purple-800">Name</th>
+                    <th className="text-right py-3 px-4 font-bold text-purple-800">Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {leaderboard.map((entry) => {
+                    const isCurrentUser = session?.user?.id === entry.user_id
+                    return (
+                      <tr
+                        key={entry.user_id}
+                        className={`border-b border-gray-200 transition-colors ${
+                          entry.rank === 1
+                            ? 'bg-gradient-to-r from-purple-400 to-purple-500 text-white'
+                            : entry.rank === 2
+                            ? 'bg-gradient-to-r from-purple-300 to-purple-400 text-white'
+                            : entry.rank === 3
+                            ? 'bg-gradient-to-r from-purple-200 to-purple-300 text-purple-900'
+                            : 'bg-white text-gray-800 hover:bg-purple-50'
+                        } ${isCurrentUser ? 'ring-2 ring-purple-600' : ''}`}
+                      >
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-2">
+                            {entry.rank === 1 ? (
+                              <span className="text-2xl">🥇</span>
+                            ) : entry.rank === 2 ? (
+                              <span className="text-2xl">🥈</span>
+                            ) : entry.rank === 3 ? (
+                              <span className="text-2xl">🥉</span>
+                            ) : (
+                              <span className="font-bold text-lg">#{entry.rank}</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-3">
+                            {entry.image ? (
+                              <img
+                                src={entry.image}
+                                alt={entry.name}
+                                className="w-10 h-10 rounded-full border-2 border-white"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold border-2 border-white text-sm">
+                                {entry.name.split(' ')[0].charAt(0)}
+                              </div>
+                            )}
+                            <span className="font-bold text-lg">
+                              {entry.name.split(' ')[0]}
+                              {isCurrentUser && (
+                                <span className="ml-2 text-sm opacity-75">(You)</span>
+                              )}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-4 px-4 text-right">
+                          <span className="font-bold text-xl">${entry.score.toLocaleString()}</span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
 

@@ -62,7 +62,8 @@ export default function FinalJeopardy({ currentScore, onComplete, finalJeopardy 
     setIsCorrect(correct)
     setStage('result')
 
-    const finalScore = correct ? currentScore + wager : currentScore - wager
+    // Round to ensure score is always an integer
+    const finalScore = Math.round(correct ? currentScore + wager : currentScore - wager)
     console.log('Final Jeopardy completed. Final score:', finalScore, 'Current score:', currentScore, 'Wager:', wager, 'Correct:', correct)
     
     setTimeout(() => {

@@ -124,7 +124,8 @@ export default function GameBoard({ onGameComplete }: { onGameComplete: (score: 
     if (currentClue) {
       const key = `${currentClue.categoryIndex}-${currentClue.clueIndex}`
       setAnsweredClues(new Set([...answeredClues, key]))
-      setScore(score + pointsEarned)
+      // Round to ensure score is always an integer
+      setScore(Math.round(score + pointsEarned))
     }
     setCurrentClue(null)
   }

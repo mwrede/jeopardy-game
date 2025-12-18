@@ -65,10 +65,10 @@ export default function QuestionModal({ clue, onAnswer, onClose, currentScore }:
 
     setTimeout(() => {
       if (correct) {
-        const earned = Math.max(0, currentValue - pointsLost)
+        const earned = Math.round(Math.max(0, currentValue - pointsLost))
         onAnswer(earned)
       } else {
-        onAnswer(-currentValue)
+        onAnswer(-Math.round(currentValue))
       }
     }, 2000)
   }
@@ -194,7 +194,7 @@ export default function QuestionModal({ clue, onAnswer, onClose, currentScore }:
             </div>
             {isCorrect && (
               <p className="text-green-300 text-2xl font-bold">
-                +${Math.max(0, currentValue - pointsLost).toLocaleString()}
+                +${Math.round(Math.max(0, currentValue - pointsLost)).toLocaleString()}
               </p>
             )}
             {!isCorrect && !isDontKnow && (

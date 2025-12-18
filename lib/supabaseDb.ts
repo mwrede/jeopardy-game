@@ -206,16 +206,28 @@ export interface Question {
 
 export async function getQuestionsForDate(date: string): Promise<Question[]> {
   try {
+    console.log('Fetching questions from Supabase for date:', date)
+    
     const { data, error } = await supabase
       .from('questions')
       .select('*')
       .eq('game_date', date)
       .order('category', { ascending: true })
-      .order('value', { ascending: true })
+      .order('value', { ascending: true, nullsFirst: false })
 
     if (error) {
-      console.error('Error fetching questions:', error)
+      console.error('Error fetching questions from Supabase:', error)
       throw error
+    }
+
+    console.log(`Found ${data?.length || 0} questions for date ${date}`)
+    
+    if (data && data.length > 0) {
+      console.log('Sample question:', {
+        category: data[0].category,
+        question_type: data[0].question_type,
+        value: data[0].value,
+      })
     }
 
     return data || []

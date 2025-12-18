@@ -84,4 +84,4 @@ The game currently has:
 
 Each category has 5 questions worth $200, $400, $600, $800, and $1,000.
 
-Enjoy the game and may the best player win a singular lenny! ( ͡° ͜ʖ ͡°)
+Enjoy the game and may the best player win a singular golden lenny! ( ͡° ͜ʖ ͡°)

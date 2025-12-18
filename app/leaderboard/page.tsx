@@ -180,7 +180,7 @@ export default function LeaderboardPage() {
           {leaderboard.length > 0 && (
             <div className="mt-8 pt-6 border-t border-gray-200 text-center">
               <p className="text-gray-600 text-sm">
-                Winner gets a singular lenny! ( ͡° ͜ʖ ͡°)
+                Winner gets a singular golden lenny! ( ͡° ͜ʖ ͡°)
               </p>
             </div>
           )}

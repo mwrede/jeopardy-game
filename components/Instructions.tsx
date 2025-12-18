@@ -34,7 +34,7 @@ export default function Instructions() {
         </p>
 
         <p className="font-semibold text-lg">
-          There will be points, and I plan to give the winner a singular lenny!
+          There will be points, and I plan to give the winner a singular golden lenny!
         </p>
       </div>
     </div>

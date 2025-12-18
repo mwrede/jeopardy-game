@@ -66,7 +66,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - Answer incorrectly and lose the full tile value
 - Daily Doubles let you wager (minimum $2,000)
 - Final Jeopardy appears when all tiles are completed
-- **The winner gets a singular lenny!** ( ͡° ͜ʖ ͡°)
+- **The winner gets a singular golden lenny!** ( ͡° ͜ʖ ͡°)
 
 ## Tech Stack
 

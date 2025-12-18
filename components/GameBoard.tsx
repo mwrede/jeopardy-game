@@ -35,18 +35,26 @@ export default function GameBoard({ onGameComplete }: { onGameComplete: (score: 
         setLoading(true)
         setError(null)
         
+        console.log('Fetching questions from Supabase...')
+        
         // Fetch regular questions
         const response = await fetch('/api/questions')
         if (!response.ok) {
-          throw new Error('Failed to fetch questions')
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.error || `Failed to fetch questions: ${response.statusText}`)
         }
         const questions: Question[] = await response.json()
+        
+        console.log(`Fetched ${questions.length} questions from Supabase`)
 
         // Fetch Final Jeopardy
         const finalResponse = await fetch('/api/questions?type=final')
         if (finalResponse.ok) {
           const final = await finalResponse.json()
-          setFinalJeopardy(final)
+          if (final && final.id) {
+            setFinalJeopardy(final)
+            console.log('Final Jeopardy loaded:', final.category)
+          }
         }
 
         // Group questions by category
@@ -71,13 +79,19 @@ export default function GameBoard({ onGameComplete }: { onGameComplete: (score: 
           }
         })
 
+        console.log(`Grouped into ${categoryMap.size} categories`)
+
         // Convert to Category array and sort clues by value
         const categoriesArray: Category[] = Array.from(categoryMap.entries()).map(([name, clues]) => ({
           name,
           clues: clues.sort((a, b) => a.value - b.value),
         }))
 
-        setCategories(categoriesArray)
+        if (categoriesArray.length === 0) {
+          setError('No questions found in Supabase for today. Please check that questions exist in the questions table with today\'s date.')
+        } else {
+          setCategories(categoriesArray)
+        }
       } catch (err) {
         console.error('Error fetching questions:', err)
         setError(err instanceof Error ? err.message : 'Failed to load questions')

@@ -184,17 +184,23 @@ export default function Home() {
     if (gameCompleted && !saving) {
       console.log('Game completed, setting up leaderboard auto-refresh')
       
-      // Refresh immediately with a small delay to ensure data is available
+      // Refresh immediately with a delay to ensure data is available
       const immediateRefresh = setTimeout(() => {
         console.log('Immediate leaderboard refresh after game completion')
         fetchLeaderboard()
-      }, 1000)
+      }, 2000)
 
-      // Set up auto-refresh every 3 seconds (more frequent)
+      // Refresh again after a bit more time
+      const secondRefresh = setTimeout(() => {
+        console.log('Second leaderboard refresh after game completion')
+        fetchLeaderboard()
+      }, 4000)
+
+      // Set up auto-refresh every 2 seconds (more frequent)
       const interval = setInterval(() => {
         console.log('Auto-refreshing leaderboard...')
         fetchLeaderboard()
-      }, 3000)
+      }, 2000)
 
       // Also refresh when page comes into focus
       const handleFocus = () => {
@@ -205,11 +211,12 @@ export default function Home() {
 
       return () => {
         clearTimeout(immediateRefresh)
+        clearTimeout(secondRefresh)
         clearInterval(interval)
         window.removeEventListener('focus', handleFocus)
       }
     }
-  }, [gameCompleted, saving])
+  }, [gameCompleted, saving, session])
 
   // Show loading state while checking auth
   // But don't wait forever - if it takes too long, show the page anyway

@@ -5,15 +5,13 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
   try {
-    // Get today's date in YYYY-MM-DD format
-    const today = new Date().toISOString().split('T')[0]
-    
-    console.log('Fetching leaderboard for date:', today)
+    // Get all players regardless of date
+    console.log('Fetching all leaderboard entries (ignoring date)')
     
     // Get all players, not just top 10, so everyone can see their rank
-    const leaderboard = await getLeaderboard(today, 1000) // Large limit to get all players
+    const leaderboard = await getLeaderboard('', 1000) // Large limit to get all players
 
-    console.log('Leaderboard result:', { count: leaderboard.length, date: today })
+    console.log('Leaderboard result:', { count: leaderboard.length })
 
     return NextResponse.json(leaderboard)
   } catch (error) {

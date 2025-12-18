@@ -85,13 +85,12 @@ export async function hasPlayedToday(userId: string, date: string): Promise<bool
 }
 
 export async function getLeaderboard(date: string, limit: number = 1000): Promise<LeaderboardEntry[]> {
-  // Get all games for today
-  console.log('Querying games for date:', date)
+  // Get all games regardless of date
+  console.log('Querying all games (ignoring date filter)')
   
   const { data: games, error: gamesError } = await supabase
     .from('games')
     .select('user_id, score, completed_at, date')
-    .eq('date', date)
 
   if (gamesError) {
     console.error('Error fetching games:', gamesError)

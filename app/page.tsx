@@ -75,6 +75,25 @@ export default function Home() {
     return () => clearTimeout(timeout)
   }, [session])
 
+  const fetchLeaderboard = async () => {
+    try {
+      // Add cache-busting timestamp to ensure fresh data
+      const leaderboardResponse = await fetch(`/api/leaderboard?t=${Date.now()}`)
+      const leaderboardData = await leaderboardResponse.json()
+      setLeaderboard(leaderboardData) // Show all entries, not just top 3
+
+      // Find user's rank from leaderboard data
+      if (session?.user?.id) {
+        const userEntry = leaderboardData.find((entry: any) => entry.user_id === session.user?.id)
+        if (userEntry) {
+          setUserRank(userEntry.rank || null)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch leaderboard:', error)
+    }
+  }
+
   const handleGameComplete = async (score: number) => {
     setFinalScore(score)
     setGameCompleted(true)
@@ -89,24 +108,38 @@ export default function Home() {
         body: JSON.stringify({ score }),
       })
 
-      // Fetch leaderboard after saving - get all entries
-      const leaderboardResponse = await fetch('/api/leaderboard')
-      const leaderboardData = await leaderboardResponse.json()
-      setLeaderboard(leaderboardData) // Show all entries, not just top 3
-
-      // Find user's rank from leaderboard data
-      if (session?.user?.id) {
-        const userEntry = leaderboardData.find((entry: any) => entry.user_id === session.user?.id)
-        if (userEntry) {
-          setUserRank(userEntry.rank || null)
-        }
-      }
+      // Fetch leaderboard after saving
+      await fetchLeaderboard()
     } catch (error) {
       console.error('Failed to save score:', error)
     } finally {
       setSaving(false)
     }
   }
+
+  // Auto-refresh leaderboard when game is completed
+  useEffect(() => {
+    if (gameCompleted && !saving) {
+      // Refresh immediately
+      fetchLeaderboard()
+
+      // Set up auto-refresh every 5 seconds
+      const interval = setInterval(() => {
+        fetchLeaderboard()
+      }, 5000)
+
+      // Also refresh when page comes into focus
+      const handleFocus = () => {
+        fetchLeaderboard()
+      }
+      window.addEventListener('focus', handleFocus)
+
+      return () => {
+        clearInterval(interval)
+        window.removeEventListener('focus', handleFocus)
+      }
+    }
+  }, [gameCompleted, saving, session])
 
   // Show loading state while checking auth
   // But don't wait forever - if it takes too long, show the page anyway

@@ -112,7 +112,9 @@ export default function Home() {
 
       if (!saveResponse.ok) {
         const errorData = await saveResponse.json().catch(() => ({}))
-        throw new Error(errorData.error || `Failed to save score: ${saveResponse.statusText}`)
+        const errorMessage = errorData.details || errorData.error || `Failed to save score: ${saveResponse.statusText}`
+        console.error('Save failed:', errorMessage)
+        throw new Error(errorMessage)
       }
 
       const saveResult = await saveResponse.json()

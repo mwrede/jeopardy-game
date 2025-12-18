@@ -34,14 +34,42 @@ export async function createOrUpdateUser(
 }
 
 export async function saveGame(userId: string, score: number, date: string): Promise<void> {
-  const { error } = await supabase.from('games').insert({
-    user_id: userId,
-    score,
-    date,
-  })
+  try {
+    console.log('Attempting to save game:', { userId, score, date })
+    
+    // First, ensure the user exists in the users table
+    const { data: existingUser, error: userCheckError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', userId)
+      .single()
 
-  if (error) {
-    console.error('Error saving game:', error)
+    if (userCheckError && userCheckError.code !== 'PGRST116') {
+      // PGRST116 means no rows found, which is expected if user doesn't exist
+      console.error('Error checking user:', userCheckError)
+      throw new Error(`User check failed: ${userCheckError.message}`)
+    }
+
+    if (!existingUser) {
+      console.log('User not found, this might cause a foreign key constraint error')
+      throw new Error(`User with ID "${userId}" does not exist in the users table. Please sign in again.`)
+    }
+
+    const { data, error } = await supabase.from('games').insert({
+      user_id: userId,
+      score,
+      date,
+    }).select()
+
+    if (error) {
+      console.error('Error saving game to Supabase:', error)
+      console.error('Error details:', JSON.stringify(error, null, 2))
+      throw new Error(`Supabase error: ${error.message || JSON.stringify(error)}`)
+    }
+
+    console.log('Game saved successfully:', data)
+  } catch (error) {
+    console.error('Unexpected error in saveGame:', error)
     throw error
   }
 }

@@ -37,6 +37,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, date: today })
   } catch (error) {
     console.error('Error saving game:', error)
-    return NextResponse.json({ error: 'Failed to save game' }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const errorDetails = error && typeof error === 'object' && 'message' in error ? String(error.message) : String(error)
+    return NextResponse.json({ 
+      error: 'Failed to save game',
+      details: errorDetails
+    }, { status: 500 })
   }
 }

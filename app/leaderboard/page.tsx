@@ -34,8 +34,16 @@ export default function LeaderboardPage() {
       try {
         setLoading(true)
         setError(null)
-        // Add cache-busting timestamp to ensure fresh data
-        const response = await fetch(`/api/leaderboard?t=${Date.now()}`)
+        // Force fresh data from Supabase with no caching
+        const timestamp = Date.now()
+        console.log(`[${timestamp}] Fetching leaderboard from Supabase...`)
+        
+        const response = await fetch(`/api/leaderboard?t=${timestamp}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+          },
+        })
         
         if (!response.ok) {
           throw new Error(`Failed to fetch leaderboard: ${response.statusText}`)
@@ -47,13 +55,28 @@ export default function LeaderboardPage() {
           throw new Error(data.error)
         }
         
-        setLeaderboard(Array.isArray(data) ? data : [])
-        console.log('Leaderboard data:', data)
+        const leaderboardData = Array.isArray(data) ? data : []
+        console.log(`[${timestamp}] Leaderboard fetched:`, { 
+          count: leaderboardData.length,
+          entries: leaderboardData.map((e: LeaderboardEntry) => ({
+            user_id: e.user_id,
+            name: e.name,
+            score: e.score,
+            rank: e.rank
+          }))
+        })
+        
+        setLeaderboard(leaderboardData)
 
         // Find user's rank from the data
         if (session?.user?.id) {
-          const userEntry = data.find((entry: LeaderboardEntry) => entry.user_id === session.user?.id)
-          setUserRank(userEntry?.rank || null)
+          const userEntry = leaderboardData.find((entry: LeaderboardEntry) => entry.user_id === session.user?.id)
+          if (userEntry) {
+            console.log(`[${timestamp}] User rank:`, userEntry.rank, 'score:', userEntry.score)
+            setUserRank(userEntry.rank || null)
+          } else {
+            console.warn(`[${timestamp}] User ${session.user.id} not found in leaderboard`)
+          }
         }
       } catch (error) {
         console.error('Failed to fetch leaderboard:', error)
@@ -64,15 +87,18 @@ export default function LeaderboardPage() {
     }
 
     if (session) {
+      // Fetch immediately
       fetchLeaderboard()
       
-      // Refresh every 5 seconds to get latest data from Supabase
+      // Refresh every 3 seconds to get latest data from Supabase
       const interval = setInterval(() => {
+        console.log('Auto-refreshing leaderboard...')
         fetchLeaderboard()
-      }, 5000)
+      }, 3000)
       
       // Also refresh when page comes into focus
       const handleFocus = () => {
+        console.log('Page focused, refreshing leaderboard')
         fetchLeaderboard()
       }
       window.addEventListener('focus', handleFocus)

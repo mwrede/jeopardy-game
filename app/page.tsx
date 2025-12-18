@@ -259,8 +259,10 @@ export default function Home() {
             {!saving && leaderboard.length > 0 && (
               <div className="mb-8">
                 <h3 className="text-2xl font-bold text-center mb-4 text-purple-800">All Players</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <div className="inline-block min-w-full align-middle">
+                    <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+                      <table className="min-w-full divide-y divide-gray-300">
                     <thead>
                       <tr className="bg-purple-100 border-b-2 border-purple-300">
                         <th className="text-left py-4 px-6 font-bold text-purple-800 w-24">Rank</th>
@@ -326,6 +328,8 @@ export default function Home() {
                       })}
                     </tbody>
                   </table>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

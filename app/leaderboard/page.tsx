@@ -110,11 +110,11 @@ export default function LeaderboardPage() {
                       />
                     ) : (
                       <div className="w-12 h-12 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold border-2 border-white">
-                        {entry.name.charAt(0)}
+                        {entry.name.split(' ')[0].charAt(0)}
                       </div>
                     )}
                     <div>
-                      <p className="font-bold text-lg">{entry.name}</p>
+                      <p className="font-bold text-lg">{entry.name.split(' ')[0]}</p>
                       <p className="text-sm opacity-75">
                         {new Date(entry.completed_at).toLocaleTimeString()}
                       </p>

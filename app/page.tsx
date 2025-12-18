@@ -169,7 +169,7 @@ export default function Home() {
                         </div>
                         <div className="flex-1">
                           <p className="font-bold text-lg">
-                            {entry.name}
+                            {entry.name.split(' ')[0]}
                             {isCurrentUser && <span className="ml-2 text-sm">(You)</span>}
                           </p>
                         </div>

@@ -19,8 +19,13 @@ export default function Home() {
   const [checkingStatus, setCheckingStatus] = useState(true)
 
   useEffect(() => {
+    // Only redirect if we're sure the status is unauthenticated
+    // Add a small delay to prevent immediate redirects during initialization
     if (status === 'unauthenticated') {
-      router.push('/login')
+      const timer = setTimeout(() => {
+        router.push('/login')
+      }, 100)
+      return () => clearTimeout(timer)
     }
   }, [status, router])
 

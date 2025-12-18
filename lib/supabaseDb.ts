@@ -197,65 +197,34 @@ export async function getMostRecentGameScore(userId: string): Promise<{ score: n
 }
 
 export async function getLeaderboard(date: string, limit: number = 1000): Promise<LeaderboardEntry[]> {
-  // Get ALL games from Supabase - no filtering, get everything
-  const { data: allGames, error: gamesError } = await supabase
-    .from('games')
-    .select('user_id, score, completed_at')
-    .order('completed_at', { ascending: false })
+  // Query the leaderboard view directly
+  const { data: leaderboard, error } = await supabase
+    .from('leaderboard')
+    .select('*')
 
-  if (gamesError) {
-    console.error('Error fetching games from Supabase:', gamesError)
-    throw gamesError
+  if (error) {
+    console.error('Error fetching leaderboard from Supabase:', error)
+    throw error
   }
 
-  if (!allGames || allGames.length === 0) {
-    console.log('No games found in Supabase')
+  if (!leaderboard || leaderboard.length === 0) {
+    console.log('No entries found in leaderboard view')
     return []
   }
 
-  console.log(`Fetched ${allGames.length} total games from Supabase`)
+  console.log(`Fetched ${leaderboard.length} entries from leaderboard view`)
 
-  // Get the most recent game for each user
-  // Since games are ordered by completed_at DESC, first occurrence is most recent
-  const userScores = new Map<string, { score: number; completed_at: string }>()
-  
-  allGames.forEach((game) => {
-    const userId = game.user_id
-    if (!userScores.has(userId)) {
-      // First time seeing this user - this is their most recent game
-      userScores.set(userId, {
-        score: game.score,
-        completed_at: game.completed_at,
-      })
-    }
-  })
-
-  const userIds = Array.from(userScores.keys())
-  console.log(`Found ${userIds.length} unique users with games:`, userIds)
-
-  // Get user details for all users (separate query for reliability)
-  const { data: users } = await supabase
-    .from('users')
-    .select('id, name, image')
-    .in('id', userIds)
-
-  const userMap = new Map((users || []).map(u => [u.id, u]))
-  console.log(`Found ${userMap.size} users in users table`)
-
-  // Build leaderboard entries - include ALL users with games
-  const entries: LeaderboardEntry[] = userIds.map((userId) => {
-    const scoreData = userScores.get(userId)!
-    const user = userMap.get(userId)
-    return {
-      user_id: userId,
-      name: user?.name || userId, // Use user_id as name if user not found
-      image: user?.image || null,
-      score: scoreData.score,
-      completed_at: scoreData.completed_at,
-      has_finished: true,
-      rank: 0, // Will be calculated below
-    }
-  })
+  // The view returns: user_id, name, image, score, completed_at
+  // We need to add rank and has_finished
+  const entries: LeaderboardEntry[] = leaderboard.map((entry: any) => ({
+    user_id: entry.user_id,
+    name: entry.name || entry.user_id, // Use user_id as name if name is null
+    image: entry.image || null,
+    score: entry.score,
+    completed_at: entry.completed_at,
+    has_finished: true, // If they're in the leaderboard, they've finished
+    rank: 0, // Will be calculated below
+  }))
 
   // Sort by score descending, then by completed_at ascending (earlier completion = better rank for ties)
   entries.sort((a, b) => {

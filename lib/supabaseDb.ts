@@ -7,14 +7,17 @@ export async function createOrUpdateUser(
   name: string | null,
   image: string | null
 ): Promise<void> {
+  // For Google OAuth users, use email as both id and username
+  // Password is not needed for OAuth users, but we need to provide a placeholder
   const { error } = await supabase
     .from('users')
     .upsert(
       {
-        id,
-        email,
-        name,
-        image,
+        id: id,
+        username: email, // Use email as username for OAuth users
+        password: 'oauth_user', // Placeholder - not used for OAuth
+        name: name,
+        image: image,
       },
       {
         onConflict: 'id',

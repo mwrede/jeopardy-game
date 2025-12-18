@@ -1,65 +1,38 @@
 import { AuthOptions } from 'next-auth'
-import CredentialsProvider from 'next-auth/providers/credentials'
-import { verifyUser, createUser } from '@/lib/auth'
+import GoogleProvider from 'next-auth/providers/google'
+import { createOrUpdateUser } from '@/lib/supabaseDb'
 
 export const authOptions: AuthOptions = {
   providers: [
-    CredentialsProvider({
-      name: 'Credentials',
-      credentials: {
-        username: { label: 'Username', type: 'text' },
-        password: { label: 'Password', type: 'password' },
-        name: { label: 'Name', type: 'text' },
-        isSignup: { label: 'Is Signup', type: 'text' },
-      },
-      async authorize(credentials) {
-        if (!credentials?.username || !credentials?.password) {
-          return null
-        }
-
-        // Check if this is a signup or login
-        if (credentials.isSignup === 'true') {
-          // Sign up
-          const user = await createUser(
-            credentials.username,
-            credentials.password,
-            credentials.name || credentials.username
-          )
-
-          if (!user) {
-            return null
-          }
-
-          return {
-            id: user.id,
-            email: user.username,
-            name: user.name,
-            image: null,
-          }
-        } else {
-          // Login
-          const user = await verifyUser(credentials.username, credentials.password)
-
-          if (!user) {
-            return null
-          }
-
-          return {
-            id: user.id,
-            email: user.username,
-            name: user.name,
-            image: null,
-          }
-        }
-      },
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async signIn({ user, account, profile }) {
+      if (account?.provider === 'google' && user.email) {
+        // Create or update user in Supabase
+        try {
+          await createOrUpdateUser(
+            user.email,
+            user.email,
+            user.name || null,
+            user.image || null
+          )
+        } catch (error) {
+          console.error('Error creating/updating user:', error)
+          // Don't block sign-in if user creation fails
+        }
+      }
+      return true
+    },
+    async jwt({ token, user, account }) {
       if (user) {
-        token.sub = user.id
+        token.sub = user.email || user.id
         token.email = user.email
         token.name = user.name
+        token.picture = user.image
       }
       return token
     },
@@ -68,6 +41,7 @@ export const authOptions: AuthOptions = {
         session.user.id = token.sub || ''
         session.user.email = token.email || ''
         session.user.name = token.name || ''
+        session.user.image = token.picture || null
       }
       return session
     },

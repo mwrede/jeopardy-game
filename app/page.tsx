@@ -204,6 +204,17 @@ export default function Home() {
               </button>
             </div>
           </div>
+        ) : hasPlayedToday ? (
+          <div className="bg-white rounded-lg shadow-lg p-12 text-center">
+            <h2 className="text-3xl font-bold mb-4 text-purple-800">You&apos;ve Already Played Today!</h2>
+            <p className="text-gray-600 mb-6">Check the leaderboard to see your rank and all players.</p>
+            <button
+              onClick={() => router.push('/leaderboard')}
+              className="bg-purple-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              View Leaderboard
+            </button>
+          </div>
         ) : (
           <GameBoard onGameComplete={handleGameComplete} />
         )}

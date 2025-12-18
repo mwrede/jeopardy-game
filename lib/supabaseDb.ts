@@ -197,7 +197,7 @@ export async function getMostRecentGameScore(userId: string): Promise<{ score: n
 }
 
 export async function getLeaderboard(date: string, limit: number = 1000): Promise<LeaderboardEntry[]> {
-  // Simple query: get all games, group by user, get best score for each
+  // Get ALL games from Supabase - no filtering, just show what's there
   const { data: games, error: gamesError } = await supabase
     .from('games')
     .select('user_id, score, completed_at')
@@ -212,11 +212,13 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
     return []
   }
 
-  // Group by user_id and get their best score
+  // Group by user_id and get their MOST RECENT game (not best score)
+  // This ensures newly played games show up immediately
   const userScores = new Map<string, { score: number; completed_at: string }>()
   games.forEach((game) => {
     const existing = userScores.get(game.user_id)
-    if (!existing || game.score > existing.score) {
+    // Always use the most recent game (games are already ordered by completed_at desc)
+    if (!existing || new Date(game.completed_at) > new Date(existing.completed_at)) {
       userScores.set(game.user_id, {
         score: game.score,
         completed_at: game.completed_at,

@@ -32,11 +32,11 @@ export const authOptions: AuthOptions = {
   callbacks: {
     async signIn({ user, account, profile }) {
       if (account?.provider === 'google' && user.email) {
-        // Create or update user in Supabase
+        // Create or update user in Supabase using email as the ID
         try {
           await createOrUpdateUser(
-            user.email,
-            user.email,
+            user.email, // Use email as the user ID
+            user.email, // Email
             user.name || null,
             user.image || null
           )
@@ -49,6 +49,7 @@ export const authOptions: AuthOptions = {
     },
     async jwt({ token, user, account }) {
       if (user) {
+        // Use email as the user ID
         token.sub = user.email || user.id
         token.email = user.email
         token.name = user.name
@@ -58,7 +59,8 @@ export const authOptions: AuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.sub || ''
+        // Ensure user.id is always the email (which is used as the ID in the database)
+        session.user.id = token.email || token.sub || ''
         session.user.email = token.email || ''
         session.user.name = token.name || ''
         session.user.image = token.picture || null

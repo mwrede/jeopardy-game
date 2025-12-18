@@ -6,10 +6,12 @@ import { useSearchParams } from 'next/navigation'
 
 function LoginForm() {
   const searchParams = useSearchParams()
+  // Always redirect to the game page (home page) after login
   const callbackUrl = searchParams.get('callbackUrl') || '/'
 
   const handleGoogleSignIn = () => {
-    signIn('google', { callbackUrl })
+    // Redirect to home page after successful Google authentication
+    signIn('google', { callbackUrl: '/' })
   }
 
   return (

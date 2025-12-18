@@ -1,0 +1,21 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { hasPlayedToday } from '@/lib/supabaseDb'
+
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getServerSession()
+
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+    }
+
+    const today = new Date().toISOString().split('T')[0]
+    const hasPlayed = await hasPlayedToday(session.user.email, today)
+
+    return NextResponse.json({ hasPlayed })
+  } catch (error) {
+    console.error('Error checking game status:', error)
+    return NextResponse.json({ error: 'Failed to check game status' }, { status: 500 })
+  }
+}

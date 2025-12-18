@@ -1,0 +1,17 @@
+Game ID,Category,Question Type,Value,Type,Clue,Answer
+12/17/2025,Hometowns,Jeopardy Round,200,Fun,This city at the base of the blue ridge mountains on the james river is home to Hunter,Lynchburg
+12/17/2025,Hometowns,Jeopardy Round,400,Fun,"You've heard of the twin cities of st. paul, minneanoplis or like dallas and fort worth, but have you heard of this ""higher number"" city which includes Davenport, Iowa",Quad Cities
+12/17/2025,Hometowns,Jeopardy Round,600,Fun,"If you wanted a cheeky pint with Katelyn, you might head to this city where the canals were quite literally built for beer.",Dublin
+12/17/2025,Hometowns,Jeopardy Round DD,800,Fun,"Go Blue, Go Julia",Ann Arbor
+12/17/2025,Hometowns,Jeopardy Round,1000,Fun,"The city of panthers, of the bank named after this country, oh and also Jeremy Powers",Charlotte
+12/17/2025,Rebus Raccoon,Jeopardy Round,200,Serious,image1,label
+12/17/2025,Rebus Raccoon,Jeopardy Round,400,Serious,image2,detection
+12/17/2025,Rebus Raccoon,Jeopardy Round,600,Serious,image3,bounding box
+12/17/2025,Rebus Raccoon,Jeopardy Round,800,Serious,image4,workspace
+12/17/2025,Rebus Raccoon,Jeopardy Round,1000,Serious,image5,manufacturing
+12/17/2025,Use Cases,Jeopardy Round,200,Serious,The largest one ever was Hallmark/westland's 2008 one which saw 150M tons of beef going poof,Recall
+12/17/2025,Use Cases,Jeopardy Round,400,Serious,This car manufacturer saved capital B billions by using roboflow,Rivian
+12/17/2025,Use Cases,Jeopardy Round DD,600,Serious,"Intelisee is a threat detection software that was suffering from a high number of false positives for detecting falls, slips, shooters meaning low precision, but actually would mean high this important metric",Recall
+12/17/2025,Use Cases,Jeopardy Round,800,Serious,This chocolate company was having wrapper issues :(,Lindt
+12/17/2025,Use Cases,Jeopardy Round,1000,Serious,"Vanilla on Strawberry, Mixed Berry on Strawberry at this company caused allergy concerns and recalls but dont worry we fixed it",Chobani
+12/17/2025,Computers,Final Jeopardy,,,"During the 1970s, this company based in Armonk NY was famous for it's large large computers called mainframes",IBM

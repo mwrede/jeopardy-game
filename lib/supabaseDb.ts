@@ -199,13 +199,14 @@ export async function getMostRecentGameScore(userId: string): Promise<{ score: n
 export async function getLeaderboard(date: string, limit: number = 1000): Promise<LeaderboardEntry[]> {
   // Use a direct SQL query to get the most recent game for each user
   // This ensures we always get the absolute latest data from Supabase
+  // Use LEFT JOIN to include games even if user doesn't exist in users table
   const { data: recentGames, error: gamesError } = await supabase
     .from('games')
     .select(`
       user_id,
       score,
       completed_at,
-      users!inner(id, name, image)
+      users(id, name, image)
     `)
     .order('completed_at', { ascending: false })
 
@@ -235,8 +236,9 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
     const existing = userScores.get(userId)
     
     // Take the first (most recent) game for each user
+    // Since games are ordered by completed_at DESC, first occurrence is most recent
     if (!existing) {
-      const user = game.users
+      const user = Array.isArray(game.users) ? game.users[0] : game.users
       userScores.set(userId, {
         score: game.score,
         completed_at: game.completed_at,

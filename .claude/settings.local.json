@@ -9,7 +9,14 @@
       "Bash(. \"$NVM_DIR/nvm.sh\")",
       "Bash(npm run dev:*)",
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial commit: Jeopardy game with Supabase authentication\n\nFeatures:\n- Username/password authentication with Supabase\n- User registration and login\n- Jeopardy-style trivia game with 3 categories\n- Daily Doubles with custom wagering\n- Final Jeopardy round\n- Real-time scoring with timer \\(15-second depletion\\)\n- Daily leaderboard with rankings\n- One play per day enforcement\n- Top 3 players display on completion\n- 30-day session persistence\n- Purple-themed UI\n\nTech stack:\n- Next.js 14 with App Router\n- TypeScript\n- Tailwind CSS\n- NextAuth.js for authentication\n- Supabase for database\n- bcryptjs for password hashing\n\n🤖 Generated with Claude Code\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git remote:*)",
+      "Bash(git remote add:*)",
+      "Bash(git push:*)",
+      "Bash(ssh-keyscan:*)",
+      "Bash(~/.ssh/known_hosts)",
+      "Bash(git commit:*)"
     ]
   }
 }

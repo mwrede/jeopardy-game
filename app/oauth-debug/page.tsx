@@ -79,19 +79,6 @@ export default function OAuthDebugPage() {
               </ul>
             </div>
           </div>
-            <div className="bg-blue-50 border border-blue-200 rounded p-4">
-              <h3 className="font-bold text-blue-800 mb-2">Step-by-step instructions:</h3>
-              <ol className="list-decimal list-inside space-y-2 text-blue-700">
-                <li>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="underline">Google Cloud Console → Credentials</a></li>
-                <li>Click on your OAuth 2.0 Client ID</li>
-                <li>Under &quot;Authorized redirect URIs&quot;, click &quot;+ ADD URI&quot;</li>
-                <li>Paste the URL above (the one in the purple box)</li>
-                <li>Click &quot;SAVE&quot;</li>
-                <li>Wait 2-3 minutes for changes to propagate</li>
-                <li>Try signing in again</li>
-              </ol>
-            </div>
-          </div>
 
           <div className="border-t pt-6">
             <h2 className="text-xl font-bold mb-4">Current Configuration</h2>

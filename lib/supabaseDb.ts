@@ -197,64 +197,70 @@ export async function getMostRecentGameScore(userId: string): Promise<{ score: n
 }
 
 export async function getLeaderboard(date: string, limit: number = 1000): Promise<LeaderboardEntry[]> {
-  // Get ALL games from Supabase - no filtering, just show what's there
-  const { data: games, error: gamesError } = await supabase
+  // Use a direct SQL query to get the most recent game for each user
+  // This ensures we always get the absolute latest data from Supabase
+  const { data: recentGames, error: gamesError } = await supabase
     .from('games')
-    .select('user_id, score, completed_at')
+    .select(`
+      user_id,
+      score,
+      completed_at,
+      users!inner(id, name, image)
+    `)
     .order('completed_at', { ascending: false })
 
   if (gamesError) {
-    console.error('Error fetching games:', gamesError)
+    console.error('Error fetching games from Supabase:', gamesError)
     throw gamesError
   }
 
-  if (!games || games.length === 0) {
+  if (!recentGames || recentGames.length === 0) {
+    console.log('No games found in Supabase')
     return []
   }
 
-  // Group by user_id and get their MOST RECENT game (not best score)
-  // This ensures newly played games show up immediately
-  const userScores = new Map<string, { score: number; completed_at: string }>()
-  games.forEach((game) => {
-    const existing = userScores.get(game.user_id)
-    // Always use the most recent game (games are already ordered by completed_at desc)
-    if (!existing || new Date(game.completed_at) > new Date(existing.completed_at)) {
-      userScores.set(game.user_id, {
+  console.log(`Fetched ${recentGames.length} total games from Supabase`)
+
+  // Group by user_id and get their MOST RECENT game
+  // Since games are ordered by completed_at DESC, first occurrence is most recent
+  const userScores = new Map<string, { 
+    score: number
+    completed_at: string
+    name: string
+    image: string | null
+  }>()
+
+  recentGames.forEach((game: any) => {
+    const userId = game.user_id
+    const existing = userScores.get(userId)
+    
+    // Take the first (most recent) game for each user
+    if (!existing) {
+      const user = game.users
+      userScores.set(userId, {
         score: game.score,
         completed_at: game.completed_at,
+        name: user?.name || userId,
+        image: user?.image || null,
       })
     }
   })
 
-  const userIds = Array.from(userScores.keys())
-  if (userIds.length === 0) {
-    return []
-  }
+  console.log(`Found ${userScores.size} unique users with games`)
+  console.log('User scores:', Array.from(userScores.entries()).map(([id, data]) => ({ user_id: id, score: data.score, name: data.name })))
 
-  // Get user details (optional - will use user_id as name if not found)
-  const { data: users } = await supabase
-    .from('users')
-    .select('id, name, image')
-    .in('id', userIds)
+  // Build leaderboard entries from the map
+  const entries: LeaderboardEntry[] = Array.from(userScores.entries()).map(([userId, data]) => ({
+    user_id: userId,
+    name: data.name,
+    image: data.image,
+    score: data.score,
+    completed_at: data.completed_at,
+    has_finished: true,
+    rank: 0, // Will be calculated below
+  }))
 
-  const userMap = new Map((users || []).map(u => [u.id, u]))
-
-  // Build leaderboard entries - include ALL users with games
-  const entries: LeaderboardEntry[] = userIds.map((userId) => {
-    const scoreData = userScores.get(userId)!
-    const user = userMap.get(userId)
-    return {
-      user_id: userId,
-      name: user?.name || userId,
-      image: user?.image || null,
-      score: scoreData.score,
-      completed_at: scoreData.completed_at,
-      has_finished: true,
-      rank: 0, // Will be calculated below
-    }
-  })
-
-  // Sort by score descending, then by completed_at ascending
+  // Sort by score descending, then by completed_at ascending (earlier completion = better rank for ties)
   entries.sort((a, b) => {
     if (b.score !== a.score) {
       return b.score - a.score
@@ -262,7 +268,7 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
     return new Date(a.completed_at).getTime() - new Date(b.completed_at).getTime()
   })
 
-  // Assign ranks
+  // Assign ranks (same score = same rank)
   entries.forEach((entry, index) => {
     if (index === 0) {
       entry.rank = 1
@@ -272,6 +278,7 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
     }
   })
 
+  console.log(`Returning ${entries.length} leaderboard entries`)
   return entries.slice(0, limit)
 }
 

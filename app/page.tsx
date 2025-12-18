@@ -159,16 +159,18 @@ export default function Home() {
       const saveResult = await saveResponse.json()
       console.log('Game saved successfully:', saveResult)
 
-      // Immediately fetch leaderboard - no delay, Supabase should have it
-      console.log('Fetching updated leaderboard immediately after game save...')
+      // Wait a bit longer for Supabase to process the insert and ensure it's available
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // Fetch leaderboard after saving to get updated rankings - force fresh data
+      console.log('Fetching updated leaderboard after game save...')
       await fetchLeaderboard()
       
-      // Fetch multiple times to ensure we get the fresh data
-      setTimeout(() => fetchLeaderboard(), 500)
-      setTimeout(() => fetchLeaderboard(), 1500)
-      setTimeout(() => fetchLeaderboard(), 3000)
+      // Fetch again after another short delay to ensure data is fully propagated
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      await fetchLeaderboard()
       
-      console.log('Leaderboard refresh scheduled')
+      console.log('Leaderboard updated after game completion')
     } catch (error) {
       console.error('Failed to save score:', error)
       alert('Failed to save your score. Please try again.')

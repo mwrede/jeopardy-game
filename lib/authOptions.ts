@@ -34,25 +34,24 @@ export const authOptions: AuthOptions = {
   ],
   callbacks: {
     async signIn({ user, account, profile }) {
-      // Always allow sign-in, even if Supabase update fails
-      // This ensures authentication works even if database is temporarily unavailable
-      try {
-        if (account?.provider === 'google' && user.email) {
-          // Create or update user in Supabase using email as the ID
-          // Fire and forget - don't await to avoid blocking authentication
-          createOrUpdateUser(
+      // Create or update user in Supabase when signing in with Google
+      if (account?.provider === 'google' && user.email) {
+        try {
+          // Await the user creation to ensure it completes
+          // This is important for proper user data storage
+          await createOrUpdateUser(
             user.email, // Use email as the user ID
             user.email, // Email
             user.name || null,
             user.image || null
-          ).catch((error) => {
-            // Log error but don't block sign-in
-            console.error('Error creating/updating user in Supabase (non-blocking):', error)
-          })
+          )
+          console.log('✅ User created/updated in Supabase:', user.email)
+        } catch (error) {
+          // Log error but don't block sign-in
+          // This allows authentication to proceed even if Supabase is temporarily unavailable
+          console.error('⚠️ Error creating/updating user in Supabase (non-blocking):', error)
+          // Don't throw - allow authentication to proceed
         }
-      } catch (error) {
-        // Catch any synchronous errors and log them, but don't block sign-in
-        console.error('Error in signIn callback (non-blocking):', error)
       }
       // Always return true to allow authentication
       return true

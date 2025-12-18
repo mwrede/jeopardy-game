@@ -23,7 +23,7 @@ if (!supabaseUrl || !supabaseKey) {
   }
   
   // Create a placeholder client that won't make network requests
-  // This allows the app to load even if env vars are missing
+  // This allows the app to load even if env vars are missing during build
   supabase = createClient(
     'https://placeholder.supabase.co',
     'placeholder-key',
@@ -43,7 +43,9 @@ if (!supabaseUrl || !supabaseKey) {
     console.warn('⚠️ Missing Supabase environment variables. Using placeholder client.')
   }
 } else {
+  // Use real Supabase client with actual credentials
   supabase = createClient(supabaseUrl, supabaseKey)
+  console.log('✅ Supabase client initialized with URL:', supabaseUrl.substring(0, 30) + '...')
 }
 
 export { supabase }

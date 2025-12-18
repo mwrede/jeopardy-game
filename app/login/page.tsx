@@ -37,7 +37,7 @@ function LoginForm() {
                 <ol className="list-decimal list-inside text-yellow-700 space-y-1">
                   <li>Go to Google Cloud Console → APIs & Services → Credentials</li>
                   <li>Click on your OAuth 2.0 Client ID</li>
-                  <li>Under "Authorized redirect URIs", add exactly:</li>
+                  <li>Under &quot;Authorized redirect URIs&quot;, add exactly:</li>
                   <li className="ml-4 font-mono bg-white p-1 rounded">https://raccoonjeopardy.vercel.app/api/auth/callback/google</li>
                   <li>Save and wait a few minutes for changes to propagate</li>
                 </ol>

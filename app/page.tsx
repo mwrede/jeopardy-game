@@ -44,10 +44,10 @@ export default function Home() {
           setHasPlayedToday(true)
           setGameCompleted(true)
 
-          // Fetch leaderboard
+          // Fetch leaderboard - get all entries
           const leaderboardResponse = await fetch('/api/leaderboard')
           const leaderboardData = await leaderboardResponse.json()
-          setLeaderboard(leaderboardData.slice(0, 3))
+          setLeaderboard(leaderboardData) // Show all entries, not just top 3
 
           // Find user's rank and score
           if (session?.user?.id) {
@@ -89,10 +89,10 @@ export default function Home() {
         body: JSON.stringify({ score }),
       })
 
-      // Fetch leaderboard after saving
+      // Fetch leaderboard after saving - get all entries
       const leaderboardResponse = await fetch('/api/leaderboard')
       const leaderboardData = await leaderboardResponse.json()
-      setLeaderboard(leaderboardData.slice(0, 3)) // Get top 3
+      setLeaderboard(leaderboardData) // Show all entries, not just top 3
 
       // Find user's rank from leaderboard data
       if (session?.user?.id) {
@@ -160,37 +160,74 @@ export default function Home() {
 
             {!saving && leaderboard.length > 0 && (
               <div className="mb-8">
-                <h3 className="text-2xl font-bold text-center mb-4 text-purple-800">Top Players</h3>
-                <div className="space-y-3">
-                  {leaderboard.map((entry, index) => {
-                    const isCurrentUser = session?.user?.id === entry.user_id
-                    return (
-                      <div
-                        key={entry.user_id}
-                        className={`flex items-center gap-4 p-4 rounded-lg ${
-                          index === 0
-                            ? 'bg-gradient-to-r from-purple-400 to-purple-500 text-white'
-                            : index === 1
-                            ? 'bg-gradient-to-r from-purple-300 to-purple-400 text-white'
-                            : 'bg-gradient-to-r from-purple-200 to-purple-300 text-purple-900'
-                        } ${isCurrentUser ? 'ring-4 ring-purple-600' : ''}`}
-                      >
-                        <div className="text-2xl font-bold w-16 text-center">
-                          {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-bold text-lg">
-                            {entry.name.split(' ')[0]}
-                            {isCurrentUser && <span className="ml-2 text-sm">(You)</span>}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-bold">${entry.score.toLocaleString()}</p>
-                          <p className="text-sm opacity-75">Rank #{index + 1}</p>
-                        </div>
-                      </div>
-                    )
-                  })}
+                <h3 className="text-2xl font-bold text-center mb-4 text-purple-800">All Players</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-purple-100 border-b-2 border-purple-300">
+                        <th className="text-left py-4 px-6 font-bold text-purple-800 w-24">Rank</th>
+                        <th className="text-left py-4 px-6 font-bold text-purple-800">First Name</th>
+                        <th className="text-right py-4 px-6 font-bold text-purple-800">Score</th>
+                        <th className="text-center py-4 px-6 font-bold text-purple-800">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {leaderboard.map((entry) => {
+                        const isCurrentUser = session?.user?.id === entry.user_id
+                        const firstName = entry.name.split(' ')[0]
+                        return (
+                          <tr
+                            key={entry.user_id}
+                            className={`border-b border-gray-200 transition-colors ${
+                              entry.rank === 1
+                                ? 'bg-gradient-to-r from-purple-400 to-purple-500 text-white'
+                                : entry.rank === 2
+                                ? 'bg-gradient-to-r from-purple-300 to-purple-400 text-white'
+                                : entry.rank === 3
+                                ? 'bg-gradient-to-r from-purple-200 to-purple-300 text-purple-900'
+                                : 'bg-white text-gray-800 hover:bg-purple-50'
+                            } ${isCurrentUser ? 'ring-2 ring-purple-600' : ''}`}
+                          >
+                            <td className="py-4 px-6">
+                              <div className="flex items-center gap-2">
+                                {entry.rank === 1 ? (
+                                  <span className="text-2xl font-bold">🥇 #1</span>
+                                ) : entry.rank === 2 ? (
+                                  <span className="text-2xl font-bold">🥈 #2</span>
+                                ) : entry.rank === 3 ? (
+                                  <span className="text-2xl font-bold">🥉 #3</span>
+                                ) : (
+                                  <span className="font-bold text-lg">#{entry.rank}</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-4 px-6">
+                              <span className="font-bold text-lg">
+                                {firstName}
+                                {isCurrentUser && (
+                                  <span className="ml-2 text-sm opacity-75">(You)</span>
+                                )}
+                              </span>
+                            </td>
+                            <td className="py-4 px-6 text-right">
+                              <span className="font-bold text-xl">${entry.score.toLocaleString()}</span>
+                            </td>
+                            <td className="py-4 px-6 text-center">
+                              {entry.has_finished ? (
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800">
+                                  ✓ Finished
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-600">
+                                  In Progress
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}

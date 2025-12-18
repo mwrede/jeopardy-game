@@ -73,9 +73,18 @@ export default function OAuthDebugPage() {
             <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
               <p className="text-yellow-800 font-semibold mb-2">⚠️ Common mistakes:</p>
               <ul className="list-disc list-inside text-yellow-700 text-sm space-y-1">
-                {redirectInfo?.commonMistakes?.map((mistake: string, i: number) => (
-                  <li key={i}>{mistake}</li>
-                ))}
+                {redirectInfo?.commonMistakes ? (
+                  redirectInfo.commonMistakes.map((mistake: string, i: number) => (
+                    <li key={i}>{mistake}</li>
+                  ))
+                ) : (
+                  <>
+                    <li>❌ Adding trailing slash: <code className="bg-red-100 px-1">/google/</code></li>
+                    <li>❌ Wrong path: <code className="bg-red-100 px-1">/api/auth/callback</code> (missing /google)</li>
+                    <li>❌ HTTP instead of HTTPS</li>
+                    <li>✅ Correct: <code className="bg-green-100 px-1">https://raccoonjeopardy.vercel.app/api/auth/callback/google</code></li>
+                  </>
+                )}
               </ul>
             </div>
           </div>

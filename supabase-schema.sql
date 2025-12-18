@@ -128,6 +128,14 @@ DROP POLICY IF EXISTS "Users can insert their own games" ON games;
 CREATE POLICY "Users can insert their own games" ON games
   FOR INSERT WITH CHECK (true);
 
+-- Enable RLS on leaderboard table
+ALTER TABLE leaderboard ENABLE ROW LEVEL SECURITY;
+
+-- Everyone can read the leaderboard
+DROP POLICY IF EXISTS "Everyone can read leaderboard" ON leaderboard;
+CREATE POLICY "Everyone can read leaderboard" ON leaderboard
+  FOR SELECT USING (true);
+
 -- Insert questions from CSV data
 INSERT INTO questions (game_date, category, question_type, value, type, clue, answer, is_daily_double, is_image, image_path) VALUES
 -- Hometowns

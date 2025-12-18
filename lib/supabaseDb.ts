@@ -86,9 +86,11 @@ export async function hasPlayedToday(userId: string, date: string): Promise<bool
 
 export async function getLeaderboard(date: string, limit: number = 1000): Promise<LeaderboardEntry[]> {
   // Get all games for today
+  console.log('Querying games for date:', date)
+  
   const { data: games, error: gamesError } = await supabase
     .from('games')
-    .select('user_id, score, completed_at')
+    .select('user_id, score, completed_at, date')
     .eq('date', date)
 
   if (gamesError) {
@@ -96,7 +98,16 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
     throw gamesError
   }
 
+  console.log('Games found:', games?.length || 0, 'for date:', date)
+
   if (!games || games.length === 0) {
+    // Try to get all games to see what dates exist (for debugging)
+    const { data: allGames } = await supabase
+      .from('games')
+      .select('date')
+      .limit(10)
+    
+    console.log('Sample dates in database:', allGames?.map(g => g.date) || [])
     return []
   }
 
@@ -127,20 +138,24 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
 
   // Combine data, sort by score (descending), and assign ranks
   // Rank is calculated consistently: same score = same rank, next rank skips
-  const leaderboard: LeaderboardEntry[] = users
+  const leaderboardEntries = users
     .map((user) => {
       const scoreData = userScores.get(user.id)
+      if (!scoreData) {
+        return null
+      }
       // If they have a game entry for today, they've finished
       const hasFinished = !!scoreData
       return {
         user_id: user.id,
         name: user.name || 'Unknown',
         image: user.image,
-        score: scoreData!.score,
-        completed_at: scoreData!.completed_at,
+        score: scoreData.score,
+        completed_at: scoreData.completed_at,
         has_finished: hasFinished,
       }
     })
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== null)
     .sort((a, b) => {
       // Sort by score descending, then by completed_at ascending (earlier = better rank)
       if (b.score !== a.score) {
@@ -148,22 +163,29 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
       }
       return new Date(a.completed_at).getTime() - new Date(b.completed_at).getTime()
     })
-    .map((entry, index, array) => {
-      // Calculate rank: same score = same rank
-      let rank = index + 1
-      if (index > 0) {
-        const prevEntry = array[index - 1] as LeaderboardEntry & { rank?: number }
-        if (entry.score === prevEntry.score) {
-          // Same score as previous entry, use same rank
-          rank = prevEntry.rank || index + 1
+
+  // Calculate ranks: same score = same rank, next rank skips
+  const leaderboard: LeaderboardEntry[] = leaderboardEntries.map((entry, index) => {
+    let rank = index + 1
+    if (index > 0) {
+      const prevEntry = leaderboardEntries[index - 1]
+      if (entry.score === prevEntry.score) {
+        // Same score as previous entry, use same rank
+        // Find the first entry with this score to get its rank
+        for (let i = index - 1; i >= 0; i--) {
+          if (leaderboardEntries[i].score === entry.score) {
+            rank = i + 1
+          } else {
+            break
+          }
         }
       }
-      return {
-        ...entry,
-        rank: rank,
-      }
-    })
-    .slice(0, limit)
+    }
+    return {
+      ...entry,
+      rank: rank,
+    }
+  }).slice(0, limit)
 
   return leaderboard
 }

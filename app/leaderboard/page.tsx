@@ -111,7 +111,7 @@ export default function LeaderboardPage() {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-purple-100 border-b-2 border-purple-300">
-                    <th className="text-left py-4 px-6 font-bold text-purple-800">Rank</th>
+                    <th className="text-left py-4 px-6 font-bold text-purple-800 w-24">Rank</th>
                     <th className="text-left py-4 px-6 font-bold text-purple-800">First Name</th>
                     <th className="text-right py-4 px-6 font-bold text-purple-800">Score</th>
                     <th className="text-center py-4 px-6 font-bold text-purple-800">Status</th>
@@ -137,11 +137,11 @@ export default function LeaderboardPage() {
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-2">
                             {entry.rank === 1 ? (
-                              <span className="text-2xl">🥇</span>
+                              <span className="text-2xl font-bold">🥇 #1</span>
                             ) : entry.rank === 2 ? (
-                              <span className="text-2xl">🥈</span>
+                              <span className="text-2xl font-bold">🥈 #2</span>
                             ) : entry.rank === 3 ? (
-                              <span className="text-2xl">🥉</span>
+                              <span className="text-2xl font-bold">🥉 #3</span>
                             ) : (
                               <span className="font-bold text-lg">#{entry.rank}</span>
                             )}

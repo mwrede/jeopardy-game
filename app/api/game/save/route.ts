@@ -18,7 +18,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid score' }, { status: 400 })
   }
 
+  // Get today's date in YYYY-MM-DD format (UTC)
   const today = new Date().toISOString().split('T')[0]
+  
+  console.log('Saving game for date:', today, 'user:', session.user.id, 'score:', score)
 
   // Use username as user ID (it's stored as the id in the users table)
   const userId = session.user.id
@@ -29,8 +32,9 @@ export async function POST(req: NextRequest) {
 
   try {
     await saveGame(userId, score, today)
+    console.log('Game saved successfully')
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, date: today })
   } catch (error) {
     console.error('Error saving game:', error)
     return NextResponse.json({ error: 'Failed to save game' }, { status: 500 })

@@ -33,62 +33,18 @@ CREATE TABLE IF NOT EXISTS games (
   date DATE NOT NULL
 );
 
--- Drop the old leaderboard view if it exists
-DROP VIEW IF EXISTS leaderboard CASCADE;
-
--- Create leaderboard table to store current leaderboard state
-CREATE TABLE IF NOT EXISTS leaderboard (
-  user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  image TEXT,
-  score INTEGER NOT NULL,
-  completed_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Create index for faster sorting
-CREATE INDEX IF NOT EXISTS idx_leaderboard_score ON leaderboard(score DESC, completed_at ASC);
-
--- Function to update leaderboard when a game is saved
-CREATE OR REPLACE FUNCTION update_leaderboard()
-RETURNS TRIGGER AS $$
-BEGIN
-  -- Insert or update the leaderboard entry with the most recent game for this user
-  INSERT INTO leaderboard (user_id, name, image, score, completed_at, updated_at)
-  SELECT 
-    NEW.user_id,
-    u.name,
-    u.image,
-    NEW.score,
-    NEW.completed_at,
-    NOW()
-  FROM users u
-  WHERE u.id = NEW.user_id
-  ON CONFLICT (user_id) 
-  DO UPDATE SET
-    -- Always update to the most recent game (not best score)
-    score = CASE 
-      WHEN NEW.completed_at >= leaderboard.completed_at THEN NEW.score
-      ELSE leaderboard.score
-    END,
-    completed_at = CASE 
-      WHEN NEW.completed_at >= leaderboard.completed_at THEN NEW.completed_at
-      ELSE leaderboard.completed_at
-    END,
-    name = COALESCE((SELECT name FROM users WHERE id = NEW.user_id), leaderboard.name),
-    image = COALESCE((SELECT image FROM users WHERE id = NEW.user_id), leaderboard.image),
-    updated_at = NOW();
-  
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Trigger to automatically update leaderboard when a game is inserted
-DROP TRIGGER IF EXISTS trigger_update_leaderboard ON games;
-CREATE TRIGGER trigger_update_leaderboard
-  AFTER INSERT ON games
-  FOR EACH ROW
-  EXECUTE FUNCTION update_leaderboard();
+-- Create leaderboard view (automatically computed from games table)
+-- Shows most recent game for each user (not grouped by date)
+CREATE OR REPLACE VIEW leaderboard AS
+SELECT DISTINCT ON (g.user_id)
+  g.user_id,
+  u.name,
+  u.image,
+  g.score,
+  g.completed_at
+FROM games g
+LEFT JOIN users u ON g.user_id = u.id
+ORDER BY g.user_id, g.completed_at DESC;
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_games_user_id ON games(user_id);
@@ -129,14 +85,6 @@ CREATE POLICY "Users can read all games" ON games
 DROP POLICY IF EXISTS "Users can insert their own games" ON games;
 CREATE POLICY "Users can insert their own games" ON games
   FOR INSERT WITH CHECK (true);
-
--- Enable RLS on leaderboard table
-ALTER TABLE leaderboard ENABLE ROW LEVEL SECURITY;
-
--- Everyone can read the leaderboard
-DROP POLICY IF EXISTS "Everyone can read leaderboard" ON leaderboard;
-CREATE POLICY "Everyone can read leaderboard" ON leaderboard
-  FOR SELECT USING (true);
 
 -- Insert questions from CSV data
 INSERT INTO questions (game_date, category, question_type, value, type, clue, answer, is_daily_double, is_image, image_path) VALUES

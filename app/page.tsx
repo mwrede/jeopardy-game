@@ -185,19 +185,19 @@ export default function Home() {
     if (gameCompleted && !saving) {
       console.log('Game completed, setting up leaderboard auto-refresh and realtime subscription')
       
-      // Set up realtime subscription to leaderboard table
+      // Set up realtime subscription to games table
       const channel = supabase
-        .channel('leaderboard-changes-results')
+        .channel('games-changes-results')
         .on(
           'postgres_changes',
           {
-            event: '*', // Listen to INSERT, UPDATE, DELETE
+            event: 'INSERT',
             schema: 'public',
-            table: 'leaderboard',
+            table: 'games',
           },
           (payload) => {
-            console.log('Leaderboard updated via realtime on results page:', payload.eventType, payload.new || payload.old)
-            // Refresh leaderboard when it's updated
+            console.log('New game inserted via realtime on results page:', payload.new)
+            // Refresh leaderboard when a new game is saved
             fetchLeaderboard()
           }
         )

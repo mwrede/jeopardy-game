@@ -197,35 +197,73 @@ export async function getMostRecentGameScore(userId: string): Promise<{ score: n
 }
 
 export async function getLeaderboard(date: string, limit: number = 1000): Promise<LeaderboardEntry[]> {
-  // Query the leaderboard table directly - it's automatically maintained by triggers
-  const { data: leaderboardData, error: leaderboardError } = await supabase
-    .from('leaderboard')
-    .select('user_id, name, image, score, completed_at')
-    .order('score', { ascending: false })
-    .order('completed_at', { ascending: true }) // Earlier completion = better rank for ties
+  // Get ALL games from Supabase - no filtering, get everything
+  const { data: allGames, error: gamesError } = await supabase
+    .from('games')
+    .select('user_id, score, completed_at')
+    .order('completed_at', { ascending: false })
 
-  if (leaderboardError) {
-    console.error('Error fetching leaderboard from Supabase:', leaderboardError)
-    throw leaderboardError
+  if (gamesError) {
+    console.error('Error fetching games from Supabase:', gamesError)
+    throw gamesError
   }
 
-  if (!leaderboardData || leaderboardData.length === 0) {
-    console.log('No entries found in leaderboard table')
+  if (!allGames || allGames.length === 0) {
+    console.log('No games found in Supabase')
     return []
   }
 
-  console.log(`Fetched ${leaderboardData.length} entries from leaderboard table`)
+  console.log(`Fetched ${allGames.length} total games from Supabase`)
 
-  // Build leaderboard entries and assign ranks
-  const entries: LeaderboardEntry[] = leaderboardData.map((entry, index) => ({
-    user_id: entry.user_id,
-    name: entry.name || entry.user_id, // Fallback to user_id if name is null
-    image: entry.image,
-    score: entry.score,
-    completed_at: entry.completed_at,
-    has_finished: true,
-    rank: 0, // Will be calculated below
-  }))
+  // Get the most recent game for each user
+  // Since games are ordered by completed_at DESC, first occurrence is most recent
+  const userScores = new Map<string, { score: number; completed_at: string }>()
+  
+  allGames.forEach((game) => {
+    const userId = game.user_id
+    if (!userScores.has(userId)) {
+      // First time seeing this user - this is their most recent game
+      userScores.set(userId, {
+        score: game.score,
+        completed_at: game.completed_at,
+      })
+    }
+  })
+
+  const userIds = Array.from(userScores.keys())
+  console.log(`Found ${userIds.length} unique users with games:`, userIds)
+
+  // Get user details for all users (separate query for reliability)
+  const { data: users } = await supabase
+    .from('users')
+    .select('id, name, image')
+    .in('id', userIds)
+
+  const userMap = new Map((users || []).map(u => [u.id, u]))
+  console.log(`Found ${userMap.size} users in users table`)
+
+  // Build leaderboard entries - include ALL users with games
+  const entries: LeaderboardEntry[] = userIds.map((userId) => {
+    const scoreData = userScores.get(userId)!
+    const user = userMap.get(userId)
+    return {
+      user_id: userId,
+      name: user?.name || userId, // Use user_id as name if user not found
+      image: user?.image || null,
+      score: scoreData.score,
+      completed_at: scoreData.completed_at,
+      has_finished: true,
+      rank: 0, // Will be calculated below
+    }
+  })
+
+  // Sort by score descending, then by completed_at ascending (earlier completion = better rank for ties)
+  entries.sort((a, b) => {
+    if (b.score !== a.score) {
+      return b.score - a.score
+    }
+    return new Date(a.completed_at).getTime() - new Date(b.completed_at).getTime()
+  })
 
   // Assign ranks (same score = same rank)
   entries.forEach((entry, index) => {

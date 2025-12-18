@@ -171,33 +171,29 @@ export async function hasPlayedToday(userId: string, date: string): Promise<bool
 }
 
 export async function getLeaderboard(date: string, limit: number = 1000): Promise<LeaderboardEntry[]> {
-  // Get all games regardless of date - always fetch fresh from Supabase
-  const timestamp = new Date().toISOString()
-  console.log(`[${timestamp}] Querying ALL games from Supabase (fresh query, no cache)`)
+  // Get all games regardless of date - force fresh query
+  console.log('Querying all games from Supabase (ignoring date filter)')
   
   const { data: games, error: gamesError } = await supabase
     .from('games')
     .select('user_id, score, completed_at, date')
-    .order('completed_at', { ascending: false }) // Get most recent first
+    .order('completed_at', { ascending: false }) // Order by most recent first
 
   if (gamesError) {
     console.error('Error fetching games:', gamesError)
     throw gamesError
   }
 
-  console.log(`[${timestamp}] Games found in Supabase:`, games?.length || 0)
-  
-  if (games && games.length > 0) {
-    console.log(`[${timestamp}] Sample games:`, games.slice(0, 3).map(g => ({
-      user_id: g.user_id,
-      score: g.score,
-      date: g.date,
-      completed_at: g.completed_at
-    })))
-  }
+  console.log('Games found:', games?.length || 0, 'for date:', date)
 
   if (!games || games.length === 0) {
-    console.log(`[${timestamp}] No games found in Supabase`)
+    // Try to get all games to see what dates exist (for debugging)
+    const { data: allGames } = await supabase
+      .from('games')
+      .select('date')
+      .limit(10)
+    
+    console.log('Sample dates in database:', allGames?.map(g => g.date) || [])
     return []
   }
 
@@ -216,15 +212,13 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
 
   // Get user details
   const userIds = Array.from(userScores.keys())
-  console.log(`[${timestamp}] User IDs from games:`, userIds)
-  console.log(`[${timestamp}] User scores map:`, Array.from(userScores.entries()).map(([id, data]) => ({ user_id: id, score: data.score })))
+  console.log('User IDs from games:', userIds)
   
   if (userIds.length === 0) {
-    console.log(`[${timestamp}] No user IDs found in games`)
+    console.log('No user IDs found in games')
     return []
   }
 
-  // Fetch users fresh from Supabase
   const { data: users, error: usersError } = await supabase
     .from('users')
     .select('id, name, image, username')
@@ -235,15 +229,12 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
     throw usersError
   }
 
-  console.log(`[${timestamp}] Users found in Supabase:`, users?.length || 0, 'for', userIds.length, 'user IDs')
-  if (users && users.length > 0) {
-    console.log(`[${timestamp}] Sample users:`, users.slice(0, 3).map(u => ({ id: u.id, username: u.username, name: u.name })))
-  }
+  console.log('Users found:', users?.length || 0, 'for', userIds.length, 'user IDs')
 
   // If we have games but no users, there's a mismatch
   if (!users || users.length === 0) {
-    console.error(`[${timestamp}] No users found for user IDs:`, userIds)
-    console.error(`[${timestamp}] This suggests user_id in games table does not match id in users table`)
+    console.error('No users found for user IDs:', userIds)
+    console.error('This suggests user_id in games table does not match id in users table')
     return []
   }
 
@@ -251,7 +242,7 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
   const foundUserIds = new Set(users.map(u => u.id))
   const missingUserIds = userIds.filter(id => !foundUserIds.has(id))
   if (missingUserIds.length > 0) {
-    console.warn(`[${timestamp}] Some user IDs from games not found in users table:`, missingUserIds)
+    console.warn('Some user IDs from games not found in users table:', missingUserIds)
   }
 
   // Combine data, sort by score (descending), and assign ranks

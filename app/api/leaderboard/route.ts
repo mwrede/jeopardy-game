@@ -13,7 +13,14 @@ export async function GET(req: NextRequest) {
 
     console.log('Leaderboard result:', { count: leaderboard.length })
 
-    return NextResponse.json(leaderboard)
+    // Prevent caching to ensure fresh data
+    return NextResponse.json(leaderboard, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    })
   } catch (error) {
     console.error('Error fetching leaderboard:', error)
     return NextResponse.json({ 

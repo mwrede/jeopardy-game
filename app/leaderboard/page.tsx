@@ -34,8 +34,13 @@ export default function LeaderboardPage() {
       try {
         setLoading(true)
         setError(null)
-        // Add cache-busting timestamp to ensure fresh data
-        const response = await fetch(`/api/leaderboard?t=${Date.now()}`)
+        // Add cache-busting timestamp and no-cache headers to ensure fresh data
+        const response = await fetch(`/api/leaderboard?t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+          },
+        })
         
         if (!response.ok) {
           throw new Error(`Failed to fetch leaderboard: ${response.statusText}`)

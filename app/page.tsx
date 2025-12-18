@@ -77,8 +77,13 @@ export default function Home() {
 
   const fetchLeaderboard = async () => {
     try {
-      // Add cache-busting timestamp to ensure fresh data
-      const leaderboardResponse = await fetch(`/api/leaderboard?t=${Date.now()}`)
+      // Add cache-busting timestamp and no-cache headers to ensure fresh data
+      const leaderboardResponse = await fetch(`/api/leaderboard?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      })
       const leaderboardData = await leaderboardResponse.json()
       setLeaderboard(leaderboardData) // Show all entries, not just top 3
 

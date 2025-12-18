@@ -21,6 +21,7 @@ export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [userRank, setUserRank] = useState<number | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -31,9 +32,22 @@ export default function LeaderboardPage() {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
+        setLoading(true)
+        setError(null)
         const response = await fetch('/api/leaderboard')
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch leaderboard: ${response.statusText}`)
+        }
+        
         const data = await response.json()
-        setLeaderboard(data)
+        
+        if (data.error) {
+          throw new Error(data.error)
+        }
+        
+        setLeaderboard(Array.isArray(data) ? data : [])
+        console.log('Leaderboard data:', data)
 
         // Find user's rank from the data
         if (session?.user?.id) {
@@ -42,6 +56,7 @@ export default function LeaderboardPage() {
         }
       } catch (error) {
         console.error('Failed to fetch leaderboard:', error)
+        setError(error instanceof Error ? error.message : 'Failed to load leaderboard')
       } finally {
         setLoading(false)
       }
@@ -49,6 +64,8 @@ export default function LeaderboardPage() {
 
     if (session) {
       fetchLeaderboard()
+    } else {
+      setLoading(false)
     }
   }, [session])
 
@@ -76,7 +93,14 @@ export default function LeaderboardPage() {
           )}
 
           {loading ? (
-            <div className="text-center text-gray-600">Loading leaderboard...</div>
+            <div className="text-center text-gray-600 py-12">
+              <p className="text-xl">Loading leaderboard...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center text-red-600 py-12">
+              <p className="text-xl mb-4">Error loading leaderboard</p>
+              <p className="text-sm">{error}</p>
+            </div>
           ) : leaderboard.length === 0 ? (
             <div className="text-center text-gray-600 py-12">
               <p className="text-xl mb-4">No scores yet today!</p>

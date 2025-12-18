@@ -2,11 +2,19 @@ import { AuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import { createOrUpdateUser } from '@/lib/supabaseDb'
 
+// Validate Google OAuth credentials
+if (!process.env.GOOGLE_CLIENT_ID) {
+  console.error('Missing GOOGLE_CLIENT_ID environment variable')
+}
+if (!process.env.GOOGLE_CLIENT_SECRET) {
+  console.error('Missing GOOGLE_CLIENT_SECRET environment variable')
+}
+
 export const authOptions: AuthOptions = {
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: process.env.GOOGLE_CLIENT_ID || '',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
     }),
   ],
   callbacks: {

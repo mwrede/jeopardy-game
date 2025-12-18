@@ -33,19 +33,8 @@ CREATE TABLE IF NOT EXISTS games (
   date DATE NOT NULL
 );
 
--- Create leaderboard view (automatically computed from games table)
-CREATE OR REPLACE VIEW leaderboard AS
-SELECT
-  g.user_id,
-  u.name,
-  u.image,
-  MAX(g.score) as score,
-  MAX(g.completed_at) as completed_at,
-  g.date
-FROM games g
-JOIN users u ON g.user_id = u.id
-GROUP BY g.user_id, u.name, u.image, g.date
-ORDER BY MAX(g.score) DESC;
+-- Note: Leaderboard is computed dynamically from the games table in the application
+-- No view or table needed - we query games directly for real-time updates
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_games_user_id ON games(user_id);

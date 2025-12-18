@@ -268,28 +268,37 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
     return []
   }
 
-  // Check for mismatches
+  // Check for mismatches - users with games but no user record
   const foundUserIds = new Set(users.map(u => u.id))
   const missingUserIds = userIds.filter(id => !foundUserIds.has(id))
   if (missingUserIds.length > 0) {
     console.warn('⚠️ Some user IDs from games not found in users table:', missingUserIds)
+    console.warn('⚠️ These users will still be included in leaderboard with fallback data')
   }
 
-  // Combine data, sort by score (descending), and assign ranks
+  // Create a map of user details for quick lookup
+  const userDetailsMap = new Map(users.map(u => [u.id, u]))
+
+  // Combine data - include ALL users with games, even if they don't have a user record
   // Rank is calculated consistently: same score = same rank, next rank skips
-  const leaderboardEntries = users
-    .map((user) => {
-      const scoreData = userScores.get(user.id)
+  const leaderboardEntries = userIds
+    .map((userId) => {
+      const scoreData = userScores.get(userId)
       if (!scoreData) {
-        console.warn(`No score data found for user ${user.id} (username: ${user.username})`)
+        console.warn(`No score data found for user ${userId}`)
         return null
       }
+      
+      // Get user details if available, otherwise use fallback
+      const userDetails = userDetailsMap.get(userId)
+      const userName = userDetails?.name || userId // Use user_id as name if user not found
+      
       // If they have a game entry, they've finished
       const hasFinished = !!scoreData
       return {
-        user_id: user.id,
-        name: user.name || 'Unknown',
-        image: user.image,
+        user_id: userId,
+        name: userName,
+        image: userDetails?.image || null,
         score: scoreData.score,
         completed_at: scoreData.completed_at,
         has_finished: hasFinished,

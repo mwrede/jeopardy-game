@@ -77,16 +77,34 @@ export default function Home() {
 
   const fetchLeaderboard = async () => {
     try {
-      // Add cache-busting timestamp to ensure fresh data
-      const leaderboardResponse = await fetch(`/api/leaderboard?t=${Date.now()}`)
+      // Add cache-busting timestamp to ensure fresh data from Supabase
+      const timestamp = Date.now()
+      console.log(`[${timestamp}] Fetching leaderboard from Supabase...`)
+      
+      const leaderboardResponse = await fetch(`/api/leaderboard?t=${timestamp}`, {
+        cache: 'no-store', // Force no caching
+      })
+      
+      if (!leaderboardResponse.ok) {
+        throw new Error(`Failed to fetch leaderboard: ${leaderboardResponse.statusText}`)
+      }
+      
       const leaderboardData = await leaderboardResponse.json()
+      console.log(`[${timestamp}] Leaderboard fetched:`, { 
+        count: leaderboardData.length,
+        user_ids: leaderboardData.map((e: any) => e.user_id)
+      })
+      
       setLeaderboard(leaderboardData) // Show all entries, not just top 3
 
       // Find user's rank from leaderboard data
       if (session?.user?.id) {
         const userEntry = leaderboardData.find((entry: any) => entry.user_id === session.user?.id)
         if (userEntry) {
+          console.log(`[${timestamp}] User rank found:`, userEntry.rank, 'score:', userEntry.score)
           setUserRank(userEntry.rank || null)
+        } else {
+          console.warn(`[${timestamp}] User ${session.user.id} not found in leaderboard`)
         }
       }
     } catch (error) {
@@ -120,8 +138,13 @@ export default function Home() {
       const saveResult = await saveResponse.json()
       console.log('Game saved successfully:', saveResult)
 
+      // Wait a moment for Supabase to process the insert, then fetch leaderboard
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
       // Fetch leaderboard after saving to get updated rankings
+      console.log('Fetching updated leaderboard after game save...')
       await fetchLeaderboard()
+      console.log('Leaderboard updated after game completion')
     } catch (error) {
       console.error('Failed to save score:', error)
       alert('Failed to save your score. Please try again.')
@@ -133,26 +156,34 @@ export default function Home() {
   // Auto-refresh leaderboard when game is completed
   useEffect(() => {
     if (gameCompleted && !saving) {
-      // Refresh immediately
-      fetchLeaderboard()
-
-      // Set up auto-refresh every 5 seconds
-      const interval = setInterval(() => {
+      console.log('Game completed, setting up leaderboard auto-refresh')
+      
+      // Refresh immediately with a small delay to ensure data is available
+      const immediateRefresh = setTimeout(() => {
+        console.log('Immediate leaderboard refresh after game completion')
         fetchLeaderboard()
-      }, 5000)
+      }, 1000)
+
+      // Set up auto-refresh every 3 seconds (more frequent)
+      const interval = setInterval(() => {
+        console.log('Auto-refreshing leaderboard...')
+        fetchLeaderboard()
+      }, 3000)
 
       // Also refresh when page comes into focus
       const handleFocus = () => {
+        console.log('Page focused, refreshing leaderboard')
         fetchLeaderboard()
       }
       window.addEventListener('focus', handleFocus)
 
       return () => {
+        clearTimeout(immediateRefresh)
         clearInterval(interval)
         window.removeEventListener('focus', handleFocus)
       }
     }
-  }, [gameCompleted, saving, session])
+  }, [gameCompleted, saving])
 
   // Show loading state while checking auth
   // But don't wait forever - if it takes too long, show the page anyway

@@ -37,7 +37,13 @@ function LoginForm() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 to-purple-800 p-4">
       <div className="bg-white p-8 rounded-lg shadow-2xl max-w-md w-full">
-        <h1 className="text-4xl font-bold text-center mb-2 text-purple-800">Jeopardy</h1>
+        <div className="flex justify-center mb-2">
+          <img 
+            src="/lenny.png" 
+            alt="Jeopardy" 
+            className="h-16 w-auto"
+          />
+        </div>
         <p className="text-center text-gray-600 mb-8">Test your knowledge against the clock</p>
 
         {error && (

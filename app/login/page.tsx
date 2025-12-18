@@ -25,10 +25,24 @@ function LoginForm() {
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-red-800 text-sm font-semibold">Authentication Error</p>
             <p className="text-red-600 text-sm mt-1">
-              {error === 'OAuthCallback' 
-                ? 'There was an issue signing in with Google. Please try again.' 
+              {error === 'OAuthCallback' || error === 'Configuration'
+                ? 'There was an issue with the OAuth configuration. Please check the redirect URI settings.'
+                : error === 'redirect_uri_mismatch'
+                ? 'Redirect URI mismatch. The redirect URI in Google Cloud Console must match: https://raccoonjeopardy.vercel.app/api/auth/callback/google'
                 : 'Please try signing in again.'}
             </p>
+            {error === 'redirect_uri_mismatch' && (
+              <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                <p className="font-semibold text-yellow-800 mb-1">To fix this:</p>
+                <ol className="list-decimal list-inside text-yellow-700 space-y-1">
+                  <li>Go to Google Cloud Console → APIs & Services → Credentials</li>
+                  <li>Click on your OAuth 2.0 Client ID</li>
+                  <li>Under "Authorized redirect URIs", add exactly:</li>
+                  <li className="ml-4 font-mono bg-white p-1 rounded">https://raccoonjeopardy.vercel.app/api/auth/callback/google</li>
+                  <li>Save and wait a few minutes for changes to propagate</li>
+                </ol>
+              </div>
+            )}
           </div>
         )}
 

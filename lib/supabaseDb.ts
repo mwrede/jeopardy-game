@@ -67,7 +67,13 @@ export async function createOrUpdateUser(
 
 export async function saveGame(username: string, score: number, date: string): Promise<void> {
   try {
-    console.log('Attempting to save game:', { username, score, date })
+    // Ensure score is an integer
+    const integerScore = Math.round(score)
+    if (integerScore !== score) {
+      console.log(`Rounding score from ${score} to ${integerScore}`)
+    }
+    
+    console.log('Attempting to save game:', { username, score: integerScore, date })
     
     // First, ensure the user exists in the users table (by username)
     const existingUser = await getUserByUsername(username)
@@ -88,7 +94,7 @@ export async function saveGame(username: string, score: number, date: string): P
     // Save game using username directly as user_id (since username = id)
     const gameData = {
       user_id: username, // Use username directly since username = id
-      score,
+      score: integerScore, // Use rounded integer score
       date,
     }
     

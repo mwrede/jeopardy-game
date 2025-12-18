@@ -18,6 +18,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid score' }, { status: 400 })
   }
 
+  // Round score to integer since database column is INTEGER
+  const roundedScore = Math.round(score)
+
   // Get today's date in YYYY-MM-DD format (UTC)
   const today = new Date().toISOString().split('T')[0]
   
@@ -28,10 +31,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Username not found' }, { status: 400 })
   }
 
-  console.log('Saving game for date:', today, 'username:', username, 'score:', score)
+  console.log('Saving game for date:', today, 'username:', username, 'score:', roundedScore, '(original:', score, ')')
 
   try {
-    await saveGame(username, score, today)
+    await saveGame(username, roundedScore, today)
     console.log('Game saved successfully')
 
     return NextResponse.json({ success: true, date: today })

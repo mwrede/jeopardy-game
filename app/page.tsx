@@ -93,10 +93,21 @@ export default function Home() {
     }
   }
 
-  if (status === 'loading' || !session || checkingStatus) {
+  // Show loading state while checking auth or if still checking game status
+  if (status === 'loading' || checkingStatus) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-roboflow-purple to-roboflow-blue">
         <div className="text-white text-2xl">Loading...</div>
+      </div>
+    )
+  }
+
+  // If unauthenticated, the useEffect will redirect to /login
+  // But we should still render something to prevent 404
+  if (status === 'unauthenticated' || !session) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-roboflow-purple to-roboflow-blue">
+        <div className="text-white text-2xl">Redirecting to login...</div>
       </div>
     )
   }

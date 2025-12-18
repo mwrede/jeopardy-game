@@ -44,17 +44,38 @@ export default function Home() {
           setHasPlayedToday(true)
           setGameCompleted(true)
 
-          // Fetch leaderboard - get all entries
-          const leaderboardResponse = await fetch('/api/leaderboard')
-          const leaderboardData = await leaderboardResponse.json()
-          setLeaderboard(leaderboardData) // Show all entries, not just top 3
+          // Fetch user's most recent score (not just best score from leaderboard)
+          if (session?.user?.id) {
+            try {
+              const mostRecentResponse = await fetch('/api/game/most-recent')
+              if (mostRecentResponse.ok) {
+                const mostRecentData = await mostRecentResponse.json()
+                if (mostRecentData && mostRecentData.score !== undefined) {
+                  console.log('Most recent game score:', mostRecentData)
+                  setFinalScore(mostRecentData.score)
+                }
+              }
+            } catch (error) {
+              console.error('Failed to fetch most recent score:', error)
+            }
+          }
 
-          // Find user's rank and score
+          // Fetch leaderboard - get all entries
+          const leaderboardResponse = await fetch(`/api/leaderboard?t=${Date.now()}`, {
+            cache: 'no-store',
+          })
+          const leaderboardData = await leaderboardResponse.json()
+          setLeaderboard(leaderboardData) // Show all entries
+
+          // Find user's rank from leaderboard
           if (session?.user?.id) {
             const userEntry = leaderboardData.find((entry: any) => entry.user_id === session.user?.id)
             if (userEntry) {
-              setFinalScore(userEntry.score)
               setUserRank(userEntry.rank || null)
+              // Only update score if we didn't get it from most recent
+              if (finalScore === 0 && userEntry.score) {
+                setFinalScore(userEntry.score)
+              }
             }
           }
         }

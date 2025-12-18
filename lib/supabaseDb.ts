@@ -170,6 +170,32 @@ export async function hasPlayedToday(userId: string, date: string): Promise<bool
   return (data?.length ?? 0) > 0
 }
 
+export async function getMostRecentGameScore(userId: string): Promise<{ score: number; completed_at: string } | null> {
+  try {
+    const { data, error } = await supabase
+      .from('games')
+      .select('score, completed_at')
+      .eq('user_id', userId)
+      .order('completed_at', { ascending: false })
+      .limit(1)
+      .single()
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows found
+        return null
+      }
+      console.error('Error getting most recent game score:', error)
+      throw error
+    }
+
+    return data ? { score: data.score, completed_at: data.completed_at } : null
+  } catch (error) {
+    console.error('Unexpected error in getMostRecentGameScore:', error)
+    return null
+  }
+}
+
 export async function getLeaderboard(date: string, limit: number = 1000): Promise<LeaderboardEntry[]> {
   // Get all games regardless of date - force fresh query
   console.log('Querying all games from Supabase (ignoring date filter)')

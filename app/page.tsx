@@ -31,7 +31,10 @@ export default function Home() {
 
   useEffect(() => {
     const checkGameStatus = async () => {
-      if (!session) return
+      if (!session) {
+        setCheckingStatus(false)
+        return
+      }
 
       try {
         const response = await fetch('/api/game/status')
@@ -64,7 +67,14 @@ export default function Home() {
       }
     }
 
+    // Add a timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      setCheckingStatus(false)
+    }, 5000) // 5 second timeout
+
     checkGameStatus()
+
+    return () => clearTimeout(timeout)
   }, [session])
 
   const handleGameComplete = async (score: number) => {
@@ -98,10 +108,11 @@ export default function Home() {
     }
   }
 
-  // Show loading state while checking auth or if still checking game status
-  if (status === 'loading' || checkingStatus) {
+  // Show loading state while checking auth
+  // But don't wait forever - if it takes too long, show the page anyway
+  if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-roboflow-purple to-roboflow-blue">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 to-purple-800">
         <div className="text-white text-2xl">Loading...</div>
       </div>
     )

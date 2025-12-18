@@ -33,6 +33,9 @@ CREATE TABLE IF NOT EXISTS games (
   date DATE NOT NULL
 );
 
+-- Drop the old leaderboard view if it exists
+DROP VIEW IF EXISTS leaderboard CASCADE;
+
 -- Create leaderboard table to store current leaderboard state
 CREATE TABLE IF NOT EXISTS leaderboard (
   user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,

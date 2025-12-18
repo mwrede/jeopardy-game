@@ -16,11 +16,27 @@ if (!supabaseUrl || !supabaseKey) {
                       !process.env.VERCEL_ENV // VERCEL_ENV is only set at runtime
   
   if (isBuildTime) {
-    // During build, create a client with placeholder values
-    // This allows the build to complete
+    // During build, create a client that won't make network requests
+    // Use a mock fetch that returns empty results
+    const mockFetch = async () => {
+      return new Response(JSON.stringify({ data: [], error: null }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+    
     supabase = createClient(
-      'https://placeholder.supabase.co',
-      'placeholder-key'
+      'https://build-time-placeholder.supabase.co',
+      'build-time-placeholder-key',
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+        },
+        global: {
+          fetch: mockFetch as any,
+        },
+      }
     )
   } else {
     // At runtime, throw error if env vars are missing

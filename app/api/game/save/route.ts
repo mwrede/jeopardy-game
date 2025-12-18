@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/authOptions'
 import { saveGame } from '@/lib/supabaseDb'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
 

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getLeaderboard } from '@/lib/supabaseDb'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(req: NextRequest) {
   try {
     const today = new Date().toISOString().split('T')[0]

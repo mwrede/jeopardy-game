@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { signIn } from 'next-auth/react'
 import { useSearchParams, useRouter } from 'next/navigation'
 
-export default function LoginPage() {
+function LoginForm() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const callbackUrl = searchParams.get('callbackUrl') || '/'
@@ -141,5 +141,19 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 to-purple-800 p-4">
+        <div className="bg-white p-8 rounded-lg shadow-2xl max-w-md w-full">
+          <div className="text-center text-gray-600">Loading...</div>
+        </div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 }

@@ -28,7 +28,7 @@ function LoginForm() {
               {error === 'OAuthCallback' || error === 'Configuration'
                 ? 'There was an issue with the OAuth configuration. Please check the redirect URI settings.'
                 : error === 'redirect_uri_mismatch'
-                ? 'Redirect URI mismatch. The redirect URI in Google Cloud Console must match: https://raccoonjeopardy.vercel.app/api/auth/callback/google'
+                ? 'Redirect URI mismatch. The redirect URI in Google Cloud Console must match: https://raccoonjep.com/api/auth/callback/google'
                 : 'Please try signing in again.'}
             </p>
             {error === 'redirect_uri_mismatch' && (
@@ -41,7 +41,7 @@ function LoginForm() {
                   <li>Copy and paste this EXACT URL (no trailing slash, no spaces):</li>
                 </ol>
                 <div className="bg-white border-2 border-yellow-300 rounded p-2 mb-3">
-                  <code className="text-xs font-mono break-all text-purple-800">https://raccoonjeopardy.vercel.app/api/auth/callback/google</code>
+                  <code className="text-xs font-mono break-all text-purple-800">https://raccoonjep.com/api/auth/callback/google</code>
                 </div>
                 <p className="text-yellow-700 text-xs mb-2">⚠️ Common mistakes:</p>
                 <ul className="list-disc list-inside text-yellow-600 text-xs space-y-0.5 ml-2">

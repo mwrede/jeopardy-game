@@ -23,11 +23,11 @@ export async function GET() {
       '7. Try signing in again'
     ],
     commonMistakes: [
-      '❌ Adding a trailing slash: https://raccoonjeopardy.vercel.app/api/auth/callback/google/',
+      '❌ Adding a trailing slash: https://raccoonjep.com/api/auth/callback/google/',
       '❌ Wrong path: /api/auth/callback (missing /google)',
-      '❌ HTTP instead of HTTPS: http://raccoonjeopardy.vercel.app/...',
+      '❌ HTTP instead of HTTPS: http://raccoonjep.com/...',
       '❌ Extra spaces or characters',
-      '✅ Correct: https://raccoonjeopardy.vercel.app/api/auth/callback/google'
+      '✅ Correct: https://raccoonjep.com/api/auth/callback/google'
     ]
   }, { status: 200 })
 }

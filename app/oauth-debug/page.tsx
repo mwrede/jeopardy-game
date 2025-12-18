@@ -82,7 +82,7 @@ export default function OAuthDebugPage() {
                     <li>❌ Adding trailing slash: <code className="bg-red-100 px-1">/google/</code></li>
                     <li>❌ Wrong path: <code className="bg-red-100 px-1">/api/auth/callback</code> (missing /google)</li>
                     <li>❌ HTTP instead of HTTPS</li>
-                    <li>✅ Correct: <code className="bg-green-100 px-1">https://raccoonjeopardy.vercel.app/api/auth/callback/google</code></li>
+                    <li>✅ Correct: <code className="bg-green-100 px-1">https://raccoonjep.com/api/auth/callback/google</code></li>
                   </>
                 )}
               </ul>

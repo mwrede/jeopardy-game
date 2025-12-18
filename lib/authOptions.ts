@@ -25,6 +25,15 @@ export const authOptions: AuthOptions = {
         }
 
         try {
+          // Check if username already exists (must be unique)
+          const { getUserByUsername } = await import('@/lib/supabaseDb')
+          const existingUser = await getUserByUsername(username)
+          
+          if (existingUser && existingUser.id !== username) {
+            // Username is taken by a different user
+            throw new Error(`Username "${username}" is already taken. Please choose a different username.`)
+          }
+
           // Create or update user in Supabase
           // Use username as the ID
           await createOrUpdateUser(username, name, null)
@@ -37,6 +46,10 @@ export const authOptions: AuthOptions = {
           }
         } catch (error) {
           console.error('Error creating/updating user:', error)
+          // Return error message to show to user
+          if (error instanceof Error && error.message.includes('already taken')) {
+            throw error // Re-throw to show to user
+          }
           return null
         }
       },

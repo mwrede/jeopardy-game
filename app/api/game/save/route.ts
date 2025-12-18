@@ -21,17 +21,17 @@ export async function POST(req: NextRequest) {
   // Get today's date in YYYY-MM-DD format (UTC)
   const today = new Date().toISOString().split('T')[0]
   
-  console.log('Saving game for date:', today, 'user:', session.user.id, 'score:', score)
+  // Use username as the identifier (session.user.id is the username)
+  const username = session.user.id
 
-  // Use username as user ID (it's stored as the id in the users table)
-  const userId = session.user.id
-
-  if (!userId) {
-    return NextResponse.json({ error: 'User ID not found' }, { status: 400 })
+  if (!username) {
+    return NextResponse.json({ error: 'Username not found' }, { status: 400 })
   }
 
+  console.log('Saving game for date:', today, 'username:', username, 'score:', score)
+
   try {
-    await saveGame(userId, score, today)
+    await saveGame(username, score, today)
     console.log('Game saved successfully')
 
     return NextResponse.json({ success: true, date: today })

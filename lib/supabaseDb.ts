@@ -1,12 +1,40 @@
 import { supabase } from './supabase'
 import type { User, Game, LeaderboardEntry } from './supabase'
 
+export async function getUserByUsername(username: string): Promise<User | null> {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('username', username)
+      .single()
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
+      console.error('Error fetching user by username:', error)
+      throw error
+    }
+
+    return data || null
+  } catch (error) {
+    console.error('Unexpected error in getUserByUsername:', error)
+    return null
+  }
+}
+
 export async function createOrUpdateUser(
   username: string,
   name: string,
   image: string | null
 ): Promise<void> {
   try {
+    // Check if username already exists (must be unique)
+    const existingUser = await getUserByUsername(username)
+    
+    if (existingUser && existingUser.id !== username) {
+      // Username exists but with different ID - this shouldn't happen, but handle it
+      throw new Error(`Username "${username}" is already taken`)
+    }
+
     // Use username as the ID, no password needed
     const { error } = await supabase
       .from('users')
@@ -25,6 +53,10 @@ export async function createOrUpdateUser(
 
     if (error) {
       console.error('Error creating/updating user in Supabase:', error)
+      // Check if it's a unique constraint violation
+      if (error.code === '23505' || error.message?.includes('unique')) {
+        throw new Error(`Username "${username}" is already taken. Please choose a different username.`)
+      }
       throw error
     }
   } catch (error) {
@@ -33,30 +65,29 @@ export async function createOrUpdateUser(
   }
 }
 
-export async function saveGame(userId: string, score: number, date: string): Promise<void> {
+export async function saveGame(username: string, score: number, date: string): Promise<void> {
   try {
-    console.log('Attempting to save game:', { userId, score, date })
+    console.log('Attempting to save game:', { username, score, date })
     
-    // First, ensure the user exists in the users table
-    const { data: existingUser, error: userCheckError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('id', userId)
-      .single()
-
-    if (userCheckError && userCheckError.code !== 'PGRST116') {
-      // PGRST116 means no rows found, which is expected if user doesn't exist
-      console.error('Error checking user:', userCheckError)
-      throw new Error(`User check failed: ${userCheckError.message}`)
-    }
+    // First, ensure the user exists in the users table (by username)
+    const existingUser = await getUserByUsername(username)
 
     if (!existingUser) {
       console.log('User not found, this might cause a foreign key constraint error')
-      throw new Error(`User with ID "${userId}" does not exist in the users table. Please sign in again.`)
+      throw new Error(`User with username "${username}" does not exist in the users table. Please sign in again.`)
     }
 
+    // Username should be the same as user_id (id in users table)
+    // Since we set id: username in createOrUpdateUser, we can use username directly
+    // But verify it matches
+    if (existingUser.id !== username) {
+      console.error('Username mismatch!', { username, userId: existingUser.id })
+      throw new Error(`Username "${username}" does not match user ID "${existingUser.id}". Please sign in again.`)
+    }
+
+    // Save game using username directly as user_id (since username = id)
     const { data, error } = await supabase.from('games').insert({
-      user_id: userId,
+      user_id: username, // Use username directly since username = id
       score,
       date,
     }).select()

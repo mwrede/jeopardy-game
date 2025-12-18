@@ -34,7 +34,8 @@ export default function LeaderboardPage() {
       try {
         setLoading(true)
         setError(null)
-        const response = await fetch('/api/leaderboard')
+        // Add cache-busting timestamp to ensure fresh data
+        const response = await fetch(`/api/leaderboard?t=${Date.now()}`)
         
         if (!response.ok) {
           throw new Error(`Failed to fetch leaderboard: ${response.statusText}`)
@@ -64,6 +65,22 @@ export default function LeaderboardPage() {
 
     if (session) {
       fetchLeaderboard()
+      
+      // Refresh every 5 seconds to get latest data from Supabase
+      const interval = setInterval(() => {
+        fetchLeaderboard()
+      }, 5000)
+      
+      // Also refresh when page comes into focus
+      const handleFocus = () => {
+        fetchLeaderboard()
+      }
+      window.addEventListener('focus', handleFocus)
+      
+      return () => {
+        clearInterval(interval)
+        window.removeEventListener('focus', handleFocus)
+      }
     } else {
       setLoading(false)
     }

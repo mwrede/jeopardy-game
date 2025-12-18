@@ -167,16 +167,18 @@ export default function QuestionModal({ clue, onAnswer, onClose, currentScore }:
             <div className="flex gap-4">
               <button
                 onClick={checkAnswer}
-                className="flex-1 bg-purple-900 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-800 transition-colors"
+                className={`${clue.isDailyDouble ? 'w-full' : 'flex-1'} bg-purple-900 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-800 transition-colors`}
               >
                 Submit Answer
               </button>
-              <button
-                onClick={handleDontKnow}
-                className="flex-1 bg-purple-300 text-purple-900 font-bold py-3 px-6 rounded-lg hover:bg-purple-200 transition-colors"
-              >
-                I Don&apos;t Know
-              </button>
+              {!clue.isDailyDouble && (
+                <button
+                  onClick={handleDontKnow}
+                  className="flex-1 bg-purple-300 text-purple-900 font-bold py-3 px-6 rounded-lg hover:bg-purple-200 transition-colors"
+                >
+                  I Don&apos;t Know
+                </button>
+              )}
             </div>
           </div>
         ) : (

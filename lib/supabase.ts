@@ -74,4 +74,5 @@ export interface LeaderboardEntry {
   score: number
   completed_at: string
   rank: number
+  has_finished: boolean
 }

@@ -12,6 +12,7 @@ interface LeaderboardEntry {
   score: number
   completed_at: string
   rank: number
+  has_finished: boolean
 }
 
 export default function LeaderboardPage() {
@@ -89,6 +90,7 @@ export default function LeaderboardPage() {
                     <th className="text-left py-4 px-6 font-bold text-purple-800">Rank</th>
                     <th className="text-left py-4 px-6 font-bold text-purple-800">First Name</th>
                     <th className="text-right py-4 px-6 font-bold text-purple-800">Score</th>
+                    <th className="text-center py-4 px-6 font-bold text-purple-800">Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -131,6 +133,17 @@ export default function LeaderboardPage() {
                         </td>
                         <td className="py-4 px-6 text-right">
                           <span className="font-bold text-xl">${entry.score.toLocaleString()}</span>
+                        </td>
+                        <td className="py-4 px-6 text-center">
+                          {entry.has_finished ? (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800">
+                              ✓ Finished
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-600">
+                              In Progress
+                            </span>
+                          )}
                         </td>
                       </tr>
                     )

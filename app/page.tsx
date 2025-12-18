@@ -135,7 +135,7 @@ export default function Home() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         <Instructions />
 
-        {gameCompleted ? (
+        {gameCompleted || hasPlayedToday ? (
           <div className="bg-white rounded-lg shadow-lg p-12">
             <div className="text-center mb-8">
               <h2 className="text-5xl font-bold mb-6 text-purple-800">Game Complete!</h2>
@@ -153,7 +153,7 @@ export default function Home() {
                 <p className="text-gray-600 mb-6">Saving your score...</p>
               ) : (
                 <p className="text-gray-600 mb-6">
-                  {hasPlayedToday ? "You've already played today!" : "Your score has been saved to the leaderboard!"}
+                  {hasPlayedToday ? "You've already played today! View the leaderboard to see all players." : "Your score has been saved to the leaderboard!"}
                 </p>
               )}
             </div>

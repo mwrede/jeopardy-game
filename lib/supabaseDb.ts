@@ -130,12 +130,15 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
   const leaderboard: LeaderboardEntry[] = users
     .map((user) => {
       const scoreData = userScores.get(user.id)
+      // If they have a game entry for today, they've finished
+      const hasFinished = !!scoreData
       return {
         user_id: user.id,
         name: user.name || 'Unknown',
         image: user.image,
         score: scoreData!.score,
         completed_at: scoreData!.completed_at,
+        has_finished: hasFinished,
       }
     })
     .sort((a, b) => {

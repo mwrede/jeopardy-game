@@ -4,13 +4,17 @@ import { useEffect, useState } from 'react'
 
 export default function OAuthDebugPage() {
   const [config, setConfig] = useState<any>(null)
+  const [redirectInfo, setRedirectInfo] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/auth-check')
-      .then(res => res.json())
-      .then(data => {
-        setConfig(data)
+    Promise.all([
+      fetch('/api/auth-check').then(res => res.json()),
+      fetch('/api/test-redirect').then(res => res.json())
+    ])
+      .then(([authCheck, redirect]) => {
+        setConfig(authCheck)
+        setRedirectInfo(redirect)
         setLoading(false)
       })
       .catch(err => {
@@ -35,7 +39,7 @@ export default function OAuthDebugPage() {
     )
   }
 
-  const redirectUri = config.redirectUri?.expected || 'Not configured'
+  const redirectUri = redirectInfo?.redirectUri || config?.redirectUri?.expected || 'Not configured'
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
@@ -43,16 +47,38 @@ export default function OAuthDebugPage() {
         <h1 className="text-3xl font-bold mb-6 text-purple-800">OAuth Configuration Debug</h1>
         
         <div className="space-y-6">
-          <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-6">
-            <h2 className="text-xl font-bold text-yellow-800 mb-4">⚠️ Redirect URI Mismatch Fix</h2>
-            <p className="text-yellow-700 mb-4">
-              Copy this <strong>EXACT</strong> URL and add it to Google Cloud Console:
+          <div className="bg-red-50 border-2 border-red-400 rounded-lg p-6">
+            <h2 className="text-xl font-bold text-red-800 mb-4">🚨 CRITICAL: Redirect URI Mismatch</h2>
+            <p className="text-red-700 mb-4 font-semibold">
+              You MUST add this EXACT URL to Google Cloud Console:
             </p>
-            <div className="bg-white border-2 border-yellow-300 rounded p-4 mb-4">
-              <code className="text-lg font-mono text-purple-800 break-all">
+            <div className="bg-white border-2 border-red-300 rounded p-4 mb-4">
+              <code className="text-xl font-mono text-purple-800 break-all font-bold">
                 {redirectUri}
               </code>
             </div>
+            <div className="bg-blue-50 border border-blue-200 rounded p-4 mb-4">
+              <h3 className="font-bold text-blue-800 mb-3">Step-by-step fix:</h3>
+              <ol className="list-decimal list-inside space-y-2 text-blue-700">
+                <li>Open <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="underline font-semibold">Google Cloud Console → Credentials</a> in a new tab</li>
+                <li>Find and click on OAuth 2.0 Client ID: <code className="bg-blue-100 px-1 rounded">543014356558-bqcf9eco2h2p44nh12i5mgu6komgj5vf</code></li>
+                <li>Scroll down to <strong>&quot;Authorized redirect URIs&quot;</strong></li>
+                <li>Click <strong>&quot;+ ADD URI&quot;</strong> button</li>
+                <li>Copy the URL from the purple box above and paste it into the text field</li>
+                <li>Click <strong>&quot;SAVE&quot;</strong> at the bottom</li>
+                <li>Wait <strong>3-5 minutes</strong> for Google to update</li>
+                <li>Try signing in again</li>
+              </ol>
+            </div>
+            <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
+              <p className="text-yellow-800 font-semibold mb-2">⚠️ Common mistakes:</p>
+              <ul className="list-disc list-inside text-yellow-700 text-sm space-y-1">
+                {redirectInfo?.commonMistakes?.map((mistake: string, i: number) => (
+                  <li key={i}>{mistake}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
             <div className="bg-blue-50 border border-blue-200 rounded p-4">
               <h3 className="font-bold text-blue-800 mb-2">Step-by-step instructions:</h3>
               <ol className="list-decimal list-inside space-y-2 text-blue-700">

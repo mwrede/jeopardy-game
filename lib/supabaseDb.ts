@@ -198,6 +198,7 @@ export async function getMostRecentGameScore(userId: string): Promise<{ score: n
 
 export async function getLeaderboard(date: string, limit: number = 1000): Promise<LeaderboardEntry[]> {
   // Get all games regardless of date - force fresh query
+  console.log('=== LEADERBOARD QUERY START ===')
   console.log('Querying all games from Supabase (ignoring date filter)')
   
   const { data: games, error: gamesError } = await supabase
@@ -206,11 +207,14 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
     .order('completed_at', { ascending: false }) // Order by most recent first
 
   if (gamesError) {
-    console.error('Error fetching games:', gamesError)
+    console.error('❌ Error fetching games:', gamesError)
     throw gamesError
   }
 
-  console.log('Games found:', games?.length || 0, 'for date:', date)
+  console.log('✅ Games found:', games?.length || 0)
+  if (games && games.length > 0) {
+    console.log('Sample games:', games.slice(0, 3).map(g => ({ user_id: g.user_id, score: g.score, date: g.date })))
+  }
 
   if (!games || games.length === 0) {
     // Try to get all games to see what dates exist (for debugging)
@@ -238,7 +242,7 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
 
   // Get user details
   const userIds = Array.from(userScores.keys())
-  console.log('User IDs from games:', userIds)
+  console.log('✅ Unique user IDs from games:', userIds.length, userIds)
   
   if (userIds.length === 0) {
     console.log('No user IDs found in games')
@@ -255,11 +259,11 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
     throw usersError
   }
 
-  console.log('Users found:', users?.length || 0, 'for', userIds.length, 'user IDs')
+  console.log('✅ Users found:', users?.length || 0, 'for', userIds.length, 'user IDs')
 
   // If we have games but no users, there's a mismatch
   if (!users || users.length === 0) {
-    console.error('No users found for user IDs:', userIds)
+    console.error('❌ No users found for user IDs:', userIds)
     console.error('This suggests user_id in games table does not match id in users table')
     return []
   }
@@ -268,7 +272,7 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
   const foundUserIds = new Set(users.map(u => u.id))
   const missingUserIds = userIds.filter(id => !foundUserIds.has(id))
   if (missingUserIds.length > 0) {
-    console.warn('Some user IDs from games not found in users table:', missingUserIds)
+    console.warn('⚠️ Some user IDs from games not found in users table:', missingUserIds)
   }
 
   // Combine data, sort by score (descending), and assign ranks
@@ -322,6 +326,10 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
       rank: rank,
     }
   }).slice(0, limit)
+
+  console.log('✅ Final leaderboard entries:', leaderboard.length)
+  console.log('Leaderboard summary:', leaderboard.map(e => ({ name: e.name, score: e.score, rank: e.rank })))
+  console.log('=== LEADERBOARD QUERY END ===')
 
   return leaderboard
 }

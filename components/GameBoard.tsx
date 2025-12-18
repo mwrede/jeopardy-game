@@ -103,13 +103,14 @@ export default function GameBoard({ onGameComplete }: { onGameComplete: (score: 
     fetchQuestions()
   }, [])
 
-  const allCluesAnswered = answeredClues.size === categories.reduce((acc, cat) => acc + cat.clues.length, 0)
+  const totalClues = categories.reduce((acc, cat) => acc + cat.clues.length, 0)
+  const allCluesAnswered = categories.length > 0 && answeredClues.size === totalClues && totalClues > 0
 
   useEffect(() => {
-    if (allCluesAnswered && !showFinalJeopardy) {
+    if (allCluesAnswered && !showFinalJeopardy && finalJeopardy) {
       setShowFinalJeopardy(true)
     }
-  }, [allCluesAnswered, showFinalJeopardy])
+  }, [allCluesAnswered, showFinalJeopardy, finalJeopardy])
 
   const handleClueClick = (categoryIndex: number, clueIndex: number) => {
     const key = `${categoryIndex}-${clueIndex}`

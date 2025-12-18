@@ -189,3 +189,63 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
 
   return leaderboard
 }
+
+export interface Question {
+  id: number
+  game_date: string
+  category: string
+  question_type: string
+  value: number | null
+  type: string | null
+  clue: string
+  answer: string
+  is_daily_double: boolean
+  is_image: boolean
+  image_path: string | null
+}
+
+export async function getQuestionsForDate(date: string): Promise<Question[]> {
+  try {
+    const { data, error } = await supabase
+      .from('questions')
+      .select('*')
+      .eq('game_date', date)
+      .order('category', { ascending: true })
+      .order('value', { ascending: true })
+
+    if (error) {
+      console.error('Error fetching questions:', error)
+      throw error
+    }
+
+    return data || []
+  } catch (error) {
+    console.error('Unexpected error in getQuestionsForDate:', error)
+    throw error
+  }
+}
+
+export async function getFinalJeopardyForDate(date: string): Promise<Question | null> {
+  try {
+    const { data, error } = await supabase
+      .from('questions')
+      .select('*')
+      .eq('game_date', date)
+      .eq('question_type', 'Final Jeopardy')
+      .single()
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows found
+        return null
+      }
+      console.error('Error fetching Final Jeopardy:', error)
+      throw error
+    }
+
+    return data || null
+  } catch (error) {
+    console.error('Unexpected error in getFinalJeopardyForDate:', error)
+    return null
+  }
+}

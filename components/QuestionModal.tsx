@@ -77,7 +77,7 @@ export default function QuestionModal({ clue, onAnswer, onClose, currentScore }:
     setShowResult(true)
 
     setTimeout(() => {
-      onAnswer(0)
+      onAnswer(-currentValue)
     }, 2000)
   }
 

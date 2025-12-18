@@ -1,14 +1,28 @@
 'use client'
 
 import { useState } from 'react'
-import { FINAL_JEOPARDY } from '@/lib/gameData'
+
+interface Question {
+  id: number
+  game_date: string
+  category: string
+  question_type: string
+  value: number | null
+  type: string | null
+  clue: string
+  answer: string
+  is_daily_double: boolean
+  is_image: boolean
+  image_path: string | null
+}
 
 interface FinalJeopardyProps {
   currentScore: number
   onComplete: (finalScore: number) => void
+  finalJeopardy: Question
 }
 
-export default function FinalJeopardy({ currentScore, onComplete }: FinalJeopardyProps) {
+export default function FinalJeopardy({ currentScore, onComplete, finalJeopardy }: FinalJeopardyProps) {
   const [stage, setStage] = useState<'wager' | 'answer' | 'result'>('wager')
   const [wager, setWager] = useState(0)
   const [userAnswer, setUserAnswer] = useState('')
@@ -39,7 +53,7 @@ export default function FinalJeopardy({ currentScore, onComplete }: FinalJeopard
 
   const handleAnswerSubmit = () => {
     const normalized = normalizeAnswer(userAnswer)
-    const correctNormalized = normalizeAnswer(FINAL_JEOPARDY.answer)
+    const correctNormalized = normalizeAnswer(finalJeopardy.answer)
 
     const correct = normalized === correctNormalized ||
                    correctNormalized.includes(normalized) ||
@@ -62,7 +76,7 @@ export default function FinalJeopardy({ currentScore, onComplete }: FinalJeopard
         <div className="max-w-2xl mx-auto space-y-8">
           <div className="bg-white p-6 rounded-lg shadow-lg">
             <p className="text-gray-600 text-sm mb-2">Category:</p>
-            <p className="text-3xl font-bold text-center text-purple-800">{FINAL_JEOPARDY.category}</p>
+            <p className="text-3xl font-bold text-center text-purple-800">{finalJeopardy.category}</p>
           </div>
 
           <div className="bg-white bg-opacity-10 p-6 rounded-lg">
@@ -93,8 +107,18 @@ export default function FinalJeopardy({ currentScore, onComplete }: FinalJeopard
       {stage === 'answer' && (
         <div className="max-w-2xl mx-auto space-y-8">
           <div className="bg-white p-8 rounded-lg shadow-lg">
-            <p className="text-gray-600 text-sm mb-2">Category: {FINAL_JEOPARDY.category}</p>
-            <p className="text-2xl text-center font-semibold text-gray-800 mb-6">{FINAL_JEOPARDY.clue}</p>
+            <p className="text-gray-600 text-sm mb-2">Category: {finalJeopardy.category}</p>
+            {finalJeopardy.is_image && finalJeopardy.image_path ? (
+              <div className="mb-6 flex justify-center">
+                <img
+                  src={finalJeopardy.image_path}
+                  alt="Final Jeopardy clue"
+                  className="max-w-full h-auto rounded-lg"
+                />
+              </div>
+            ) : (
+              <p className="text-2xl text-center font-semibold text-gray-800 mb-6">{finalJeopardy.clue}</p>
+            )}
             <p className="text-center text-purple-600 font-bold">Wager: ${wager.toLocaleString()}</p>
           </div>
 
@@ -126,7 +150,7 @@ export default function FinalJeopardy({ currentScore, onComplete }: FinalJeopard
 
           <div className="bg-white p-6 rounded-lg">
             <p className="text-gray-600 text-sm mb-2">Correct answer:</p>
-            <p className="text-2xl font-semibold text-gray-800">{FINAL_JEOPARDY.answer}</p>
+            <p className="text-2xl font-semibold text-gray-800">{finalJeopardy.answer}</p>
           </div>
 
           <div className="bg-white bg-opacity-10 p-6 rounded-lg">

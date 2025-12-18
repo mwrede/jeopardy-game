@@ -1,16 +1,93 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getTodaysGame, FINAL_JEOPARDY, type Category, type Clue } from '@/lib/gameData'
+import { type Category, type Clue } from '@/lib/gameData'
 import QuestionModal from './QuestionModal'
 import FinalJeopardy from './FinalJeopardy'
 
+interface Question {
+  id: number
+  game_date: string
+  category: string
+  question_type: string
+  value: number | null
+  type: string | null
+  clue: string
+  answer: string
+  is_daily_double: boolean
+  is_image: boolean
+  image_path: string | null
+}
+
 export default function GameBoard({ onGameComplete }: { onGameComplete: (score: number) => void }) {
-  const [categories] = useState<Category[]>(getTodaysGame())
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [answeredClues, setAnsweredClues] = useState<Set<string>>(new Set())
   const [currentClue, setCurrentClue] = useState<{ clue: Clue; categoryIndex: number; clueIndex: number } | null>(null)
   const [score, setScore] = useState(0)
   const [showFinalJeopardy, setShowFinalJeopardy] = useState(false)
+  const [finalJeopardy, setFinalJeopardy] = useState<Question | null>(null)
+
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        
+        // Fetch regular questions
+        const response = await fetch('/api/questions')
+        if (!response.ok) {
+          throw new Error('Failed to fetch questions')
+        }
+        const questions: Question[] = await response.json()
+
+        // Fetch Final Jeopardy
+        const finalResponse = await fetch('/api/questions?type=final')
+        if (finalResponse.ok) {
+          const final = await finalResponse.json()
+          setFinalJeopardy(final)
+        }
+
+        // Group questions by category
+        const categoryMap = new Map<string, Clue[]>()
+        
+        questions.forEach((q) => {
+          if (q.question_type === 'Jeopardy Round') {
+            if (!categoryMap.has(q.category)) {
+              categoryMap.set(q.category, [])
+            }
+            
+            const clue: Clue = {
+              question: q.clue,
+              answer: q.answer,
+              value: q.value || 0,
+              isDailyDouble: q.is_daily_double,
+              isImage: q.is_image,
+              imagePath: q.image_path || undefined,
+            }
+            
+            categoryMap.get(q.category)!.push(clue)
+          }
+        })
+
+        // Convert to Category array and sort clues by value
+        const categoriesArray: Category[] = Array.from(categoryMap.entries()).map(([name, clues]) => ({
+          name,
+          clues: clues.sort((a, b) => a.value - b.value),
+        }))
+
+        setCategories(categoriesArray)
+      } catch (err) {
+        console.error('Error fetching questions:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load questions')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchQuestions()
+  }, [])
 
   const allCluesAnswered = answeredClues.size === categories.reduce((acc, cat) => acc + cat.clues.length, 0)
 
@@ -41,8 +118,39 @@ export default function GameBoard({ onGameComplete }: { onGameComplete: (score: 
     onGameComplete(finalScore)
   }
 
-  if (showFinalJeopardy) {
-    return <FinalJeopardy currentScore={score} onComplete={handleFinalJeopardyComplete} />
+  if (loading) {
+    return (
+      <div className="bg-white p-6 rounded-lg shadow-lg text-center">
+        <p className="text-xl text-gray-600">Loading questions...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white p-6 rounded-lg shadow-lg text-center">
+        <p className="text-xl text-red-600 mb-4">Error loading questions</p>
+        <p className="text-gray-600">{error}</p>
+      </div>
+    )
+  }
+
+  if (categories.length === 0) {
+    return (
+      <div className="bg-white p-6 rounded-lg shadow-lg text-center">
+        <p className="text-xl text-gray-600">No questions available for today.</p>
+      </div>
+    )
+  }
+
+  if (showFinalJeopardy && finalJeopardy) {
+    return (
+      <FinalJeopardy
+        currentScore={score}
+        onComplete={handleFinalJeopardyComplete}
+        finalJeopardy={finalJeopardy}
+      />
+    )
   }
 
   return (

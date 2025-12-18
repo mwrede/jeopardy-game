@@ -34,8 +34,8 @@ export default function LeaderboardPage() {
         setLeaderboard(data)
 
         // Find user's rank
-        if (session?.user?.email) {
-          const rank = data.findIndex((entry: LeaderboardEntry) => entry.user_id === session.user?.email)
+        if (session?.user?.id) {
+          const rank = data.findIndex((entry: LeaderboardEntry) => entry.user_id === session.user?.id)
           setUserRank(rank !== -1 ? rank + 1 : null)
         }
       } catch (error) {
@@ -83,7 +83,7 @@ export default function LeaderboardPage() {
           ) : (
             <div className="space-y-4">
               {leaderboard.map((entry, index) => {
-                const isCurrentUser = session?.user?.email === entry.user_id
+                const isCurrentUser = session?.user?.id === entry.user_id
                 return (
                   <div
                     key={entry.user_id}

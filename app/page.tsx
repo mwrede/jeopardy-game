@@ -50,11 +50,11 @@ export default function Home() {
           setLeaderboard(leaderboardData.slice(0, 3))
 
           // Find user's rank and score
-          if (session?.user?.email) {
-            const rank = leaderboardData.findIndex((entry: any) => entry.user_id === session.user?.email)
+          if (session?.user?.id) {
+            const rank = leaderboardData.findIndex((entry: any) => entry.user_id === session.user?.id)
             setUserRank(rank !== -1 ? rank + 1 : null)
 
-            const userEntry = leaderboardData.find((entry: any) => entry.user_id === session.user?.email)
+            const userEntry = leaderboardData.find((entry: any) => entry.user_id === session.user?.id)
             if (userEntry) {
               setFinalScore(userEntry.score)
             }
@@ -97,8 +97,8 @@ export default function Home() {
       setLeaderboard(leaderboardData.slice(0, 3)) // Get top 3
 
       // Find user's rank
-      if (session?.user?.email) {
-        const rank = leaderboardData.findIndex((entry: any) => entry.user_id === session.user?.email)
+      if (session?.user?.id) {
+        const rank = leaderboardData.findIndex((entry: any) => entry.user_id === session.user?.id)
         setUserRank(rank !== -1 ? rank + 1 : null)
       }
     } catch (error) {
@@ -163,7 +163,7 @@ export default function Home() {
                 <h3 className="text-2xl font-bold text-center mb-4 text-purple-800">Top Players</h3>
                 <div className="space-y-3">
                   {leaderboard.map((entry, index) => {
-                    const isCurrentUser = session?.user?.email === entry.user_id
+                    const isCurrentUser = session?.user?.id === entry.user_id
                     return (
                       <div
                         key={entry.user_id}

@@ -9,12 +9,12 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
     const today = new Date().toISOString().split('T')[0]
-    const hasPlayed = await hasPlayedToday(session.user.email, today)
+    const hasPlayed = await hasPlayedToday(session.user.id, today)
 
     return NextResponse.json({ hasPlayed })
   } catch (error) {

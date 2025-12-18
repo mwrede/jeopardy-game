@@ -2,21 +2,19 @@ import { supabase } from './supabase'
 import type { User, Game, LeaderboardEntry } from './supabase'
 
 export async function createOrUpdateUser(
-  id: string,
-  email: string,
-  name: string | null,
+  username: string,
+  name: string,
   image: string | null
 ): Promise<void> {
   try {
-    // For Google OAuth users, use email as both id and username
-    // Password is not needed for OAuth users, but we need to provide a placeholder
+    // Use username as the ID, no password needed
     const { error } = await supabase
       .from('users')
       .upsert(
         {
-          id: id,
-          username: email, // Use email as username for OAuth users
-          password: 'oauth_user', // Placeholder - not used for OAuth
+          id: username, // Use username as the ID
+          username: username,
+          password: 'no_password', // Placeholder - not used
           name: name,
           image: image,
         },
@@ -27,11 +25,9 @@ export async function createOrUpdateUser(
 
     if (error) {
       console.error('Error creating/updating user in Supabase:', error)
-      // Don't throw - let the caller handle it
       throw error
     }
   } catch (error) {
-    // Catch any unexpected errors (network issues, etc.)
     console.error('Unexpected error in createOrUpdateUser:', error)
     throw error
   }

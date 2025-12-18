@@ -20,11 +20,11 @@ export async function POST(req: NextRequest) {
 
   const today = new Date().toISOString().split('T')[0]
 
-  // Use email as user ID (it's stored as the id in the users table)
-  const userId = session.user.email || session.user.id
+  // Use username as user ID (it's stored as the id in the users table)
+  const userId = session.user.id
 
   if (!userId) {
-    return NextResponse.json({ error: 'User email not found' }, { status: 400 })
+    return NextResponse.json({ error: 'User ID not found' }, { status: 400 })
   }
 
   try {

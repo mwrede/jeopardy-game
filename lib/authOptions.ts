@@ -1,87 +1,64 @@
 import { AuthOptions } from 'next-auth'
-import GoogleProvider from 'next-auth/providers/google'
+import CredentialsProvider from 'next-auth/providers/credentials'
 import { createOrUpdateUser } from '@/lib/supabaseDb'
 
-// Validate Google OAuth credentials
-// Support both NEW_GOOGLE_CLIENT_ID (Vercel) and GOOGLE_CLIENT_ID (local dev)
-const clientId = process.env.NEW_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID
-const clientSecret = process.env.NEW_GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET
-
-if (!clientId) {
-  console.error('Missing NEW_GOOGLE_CLIENT_ID or GOOGLE_CLIENT_ID environment variable')
-  throw new Error('Google Client ID is required')
-}
-if (!clientSecret) {
-  console.error('Missing NEW_GOOGLE_CLIENT_SECRET or GOOGLE_CLIENT_SECRET environment variable')
-  throw new Error('Google Client Secret is required')
-}
-
-// Log for debugging (first few chars only for security)
-console.log('Google OAuth Config:', {
-  hasClientId: !!clientId,
-  hasClientSecret: !!clientSecret,
-  clientIdPrefix: clientId?.substring(0, 20),
-})
-
-// Ensure NEXTAUTH_URL doesn't have trailing slash
-const nextAuthUrl = process.env.NEXTAUTH_URL?.replace(/\/$/, '') || ''
-
-if (nextAuthUrl && process.env.NODE_ENV === 'production') {
-  console.log('NextAuth URL:', nextAuthUrl)
-  console.log('Expected callback URL:', `${nextAuthUrl}/api/auth/callback/google`)
-}
-
 export const authOptions: AuthOptions = {
-  // Explicitly set the base URL for OAuth callbacks
-  // This ensures the callback URL is correct even if NEXTAUTH_URL has issues
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === 'development',
   providers: [
-    GoogleProvider({
-      clientId: clientId,
-      clientSecret: clientSecret,
+    CredentialsProvider({
+      name: 'Credentials',
+      credentials: {
+        username: { label: 'Username', type: 'text' },
+        name: { label: 'Full Name', type: 'text' },
+      },
+      async authorize(credentials) {
+        if (!credentials?.username || !credentials?.name) {
+          return null
+        }
+
+        const username = credentials.username.trim()
+        const name = credentials.name.trim()
+
+        if (username.length === 0 || name.length === 0) {
+          return null
+        }
+
+        try {
+          // Create or update user in Supabase
+          // Use username as the ID
+          await createOrUpdateUser(username, name, null)
+
+          return {
+            id: username,
+            name: name,
+            email: null,
+            image: null,
+          }
+        } catch (error) {
+          console.error('Error creating/updating user:', error)
+          return null
+        }
+      },
     }),
   ],
   callbacks: {
-    async signIn({ user, account, profile }) {
-      // Always allow sign-in first - don't block on Supabase
-      // Create or update user in Supabase asynchronously (fire and forget)
-      if (account?.provider === 'google' && user.email) {
-        // Don't await - run in background to avoid blocking authentication
-        createOrUpdateUser(
-          user.email, // Use email as the user ID
-          user.email, // Email
-          user.name || null,
-          user.image || null
-        )
-          .then(() => {
-            console.log('✅ User created/updated in Supabase:', user.email)
-          })
-          .catch((error) => {
-            // Log error but don't block sign-in
-            // This allows authentication to proceed even if Supabase is temporarily unavailable
-            console.error('⚠️ Error creating/updating user in Supabase (non-blocking):', error)
-          })
-      }
-      // Always return true to allow authentication
-      return true
-    },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
       if (user) {
-        // Use email as the user ID
-        token.sub = user.email || user.id
-        token.email = user.email
+        // Use username as the user ID
+        token.sub = user.id
         token.name = user.name
-        token.picture = user.image
+        token.email = user.email || null
+        token.picture = user.image || null
       }
       return token
     },
     async session({ session, token }) {
       if (session.user) {
-        // Ensure user.id is always the email (which is used as the ID in the database)
-        session.user.id = token.email || token.sub || ''
-        session.user.email = token.email || ''
+        // Use username as the user ID
+        session.user.id = token.sub || ''
         session.user.name = token.name || ''
+        session.user.email = token.email || null
         session.user.image = token.picture || null
       }
       return session

@@ -77,13 +77,8 @@ export default function Home() {
 
   const fetchLeaderboard = async () => {
     try {
-      // Add cache-busting timestamp and no-cache headers to ensure fresh data
-      const leaderboardResponse = await fetch(`/api/leaderboard?t=${Date.now()}`, {
-        cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache',
-        },
-      })
+      // Add cache-busting timestamp to ensure fresh data
+      const leaderboardResponse = await fetch(`/api/leaderboard?t=${Date.now()}`)
       const leaderboardData = await leaderboardResponse.json()
       setLeaderboard(leaderboardData) // Show all entries, not just top 3
 
@@ -125,8 +120,7 @@ export default function Home() {
       const saveResult = await saveResponse.json()
       console.log('Game saved successfully:', saveResult)
 
-      // Wait a moment for Supabase to process the insert, then fetch leaderboard
-      await new Promise(resolve => setTimeout(resolve, 500))
+      // Fetch leaderboard after saving to get updated rankings
       await fetchLeaderboard()
     } catch (error) {
       console.error('Failed to save score:', error)

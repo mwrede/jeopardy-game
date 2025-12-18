@@ -83,17 +83,18 @@ export default function LeaderboardPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full border-collapse">
                 <thead>
-                  <tr className="border-b-2 border-purple-300">
-                    <th className="text-left py-3 px-4 font-bold text-purple-800">Rank</th>
-                    <th className="text-left py-3 px-4 font-bold text-purple-800">Name</th>
-                    <th className="text-right py-3 px-4 font-bold text-purple-800">Score</th>
+                  <tr className="bg-purple-100 border-b-2 border-purple-300">
+                    <th className="text-left py-4 px-6 font-bold text-purple-800">Rank</th>
+                    <th className="text-left py-4 px-6 font-bold text-purple-800">First Name</th>
+                    <th className="text-right py-4 px-6 font-bold text-purple-800">Score</th>
                   </tr>
                 </thead>
                 <tbody>
                   {leaderboard.map((entry) => {
                     const isCurrentUser = session?.user?.id === entry.user_id
+                    const firstName = entry.name.split(' ')[0]
                     return (
                       <tr
                         key={entry.user_id}
@@ -107,7 +108,7 @@ export default function LeaderboardPage() {
                             : 'bg-white text-gray-800 hover:bg-purple-50'
                         } ${isCurrentUser ? 'ring-2 ring-purple-600' : ''}`}
                       >
-                        <td className="py-4 px-4">
+                        <td className="py-4 px-6">
                           <div className="flex items-center gap-2">
                             {entry.rank === 1 ? (
                               <span className="text-2xl">🥇</span>
@@ -120,28 +121,15 @@ export default function LeaderboardPage() {
                             )}
                           </div>
                         </td>
-                        <td className="py-4 px-4">
-                          <div className="flex items-center gap-3">
-                            {entry.image ? (
-                              <img
-                                src={entry.image}
-                                alt={entry.name}
-                                className="w-10 h-10 rounded-full border-2 border-white"
-                              />
-                            ) : (
-                              <div className="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold border-2 border-white text-sm">
-                                {entry.name.split(' ')[0].charAt(0)}
-                              </div>
+                        <td className="py-4 px-6">
+                          <span className="font-bold text-lg">
+                            {firstName}
+                            {isCurrentUser && (
+                              <span className="ml-2 text-sm opacity-75">(You)</span>
                             )}
-                            <span className="font-bold text-lg">
-                              {entry.name.split(' ')[0]}
-                              {isCurrentUser && (
-                                <span className="ml-2 text-sm opacity-75">(You)</span>
-                              )}
-                            </span>
-                          </div>
+                          </span>
                         </td>
-                        <td className="py-4 px-4 text-right">
+                        <td className="py-4 px-6 text-right">
                           <span className="font-bold text-xl">${entry.score.toLocaleString()}</span>
                         </td>
                       </tr>

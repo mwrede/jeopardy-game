@@ -1,10 +1,10 @@
 # Jeopardy Game
 
-A Jeopardy-style trivia game built with Next.js, featuring Google authentication, real-time scoring, and a leaderboard.
+A Jeopardy-style trivia game built with Next.js, featuring username/password authentication, real-time scoring, and a leaderboard.
 
 ## Features
 
-- Google OAuth authentication
+- Username/password authentication
 - 3-column game board (2 work categories, 1 fun category)
 - Timer-based scoring (20 points lost per second)
 - Daily Doubles with wagering
@@ -17,7 +17,7 @@ A Jeopardy-style trivia game built with Next.js, featuring Google authentication
 ### Prerequisites
 
 - Node.js 18+ installed
-- Google Cloud Console account for OAuth credentials
+- Supabase account (for database)
 
 ### 1. Install Dependencies
 
@@ -25,23 +25,19 @@ A Jeopardy-style trivia game built with Next.js, featuring Google authentication
 npm install
 ```
 
-### 2. Set Up Google OAuth
+### 2. Set Up Supabase
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select an existing one
-3. Enable the Google+ API
-4. Go to Credentials → Create Credentials → OAuth 2.0 Client ID
-5. Configure the OAuth consent screen
-6. Set the authorized redirect URI to: `http://localhost:3000/api/auth/callback/google`
-7. Copy the Client ID and Client Secret
+1. Create a Supabase project at [supabase.com](https://supabase.com)
+2. Run the SQL schema from `supabase-schema.sql` in your Supabase SQL Editor
+3. Get your Supabase URL and anon key from Settings → API
 
 ### 3. Configure Environment Variables
 
 Edit the `.env.local` file and add your credentials:
 
 ```env
-GOOGLE_CLIENT_ID=your-google-client-id-here
-GOOGLE_CLIENT_SECRET=your-google-client-secret-here
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key-here
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=your-nextauth-secret-here
 ```
@@ -75,7 +71,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ## Tech Stack
 
 - **Framework:** Next.js 14 (App Router)
-- **Authentication:** NextAuth.js with Google OAuth
+- **Authentication:** NextAuth.js with username/password (Credentials)
 - **Database:** SQLite with better-sqlite3
 - **Styling:** Tailwind CSS
 - **Language:** TypeScript
@@ -123,9 +119,8 @@ Edit `lib/gameData.ts` to change:
 
 1. Push your code to GitHub
 2. Import the project in Vercel
-3. Add environment variables in Vercel dashboard
+3. Add environment variables in Vercel dashboard (Supabase URL, Supabase key, NEXTAUTH_URL, NEXTAUTH_SECRET)
 4. Update `NEXTAUTH_URL` to your production URL
-5. Update Google OAuth redirect URI to include production URL
 
 **Note:** SQLite database won't persist on Vercel. For production, consider using:
 - Vercel Postgres

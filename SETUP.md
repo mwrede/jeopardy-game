@@ -12,31 +12,22 @@ Open your terminal in the jeopardy directory and run:
 npm install
 ```
 
-## Step 3: Set Up Google OAuth
+## Step 3: Set Up Supabase
 
-### Create Google OAuth Credentials:
-
-1. Visit [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project (or select existing)
-3. Click "APIs & Services" → "Credentials"
-4. Click "Create Credentials" → "OAuth 2.0 Client ID"
-5. If prompted, configure the OAuth consent screen:
-   - Choose "External" user type
-   - Fill in app name: "Jeopardy Game"
-   - Add your email as developer contact
-   - Skip optional scopes
-6. For Application type, select "Web application"
-7. Add authorized redirect URI: `http://localhost:3000/api/auth/callback/google`
-8. Click "Create"
-9. Copy your Client ID and Client Secret
+1. Go to [supabase.com](https://supabase.com) and create a free account
+2. Create a new project
+3. Go to Settings → API and copy your:
+   - Project URL (this is your `NEXT_PUBLIC_SUPABASE_URL`)
+   - anon public key (this is your `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
+4. Go to SQL Editor and run the SQL from `supabase-schema.sql`
 
 ## Step 4: Configure Environment Variables
 
 Open `.env.local` and replace the placeholder values:
 
 ```env
-GOOGLE_CLIENT_ID=paste-your-client-id-here
-GOOGLE_CLIENT_SECRET=paste-your-client-secret-here
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key-here
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=run-openssl-rand-base64-32-to-generate
 ```
@@ -59,7 +50,7 @@ Open your browser to [http://localhost:3000](http://localhost:3000)
 
 ## Step 6: Play!
 
-1. Sign in with your Google account
+1. Create an account or sign in with username/password
 2. Read the instructions
 3. Click on any tile to start playing
 4. Answer questions quickly to maximize points
@@ -69,14 +60,14 @@ Open your browser to [http://localhost:3000](http://localhost:3000)
 
 ## Troubleshooting
 
-**Issue:** Google sign-in fails
-- Make sure your redirect URI is exactly: `http://localhost:3000/api/auth/callback/google`
-- Check that your OAuth consent screen is configured
-- Verify your Client ID and Secret are correct in `.env.local`
+**Issue:** Cannot login or signup
+- Make sure you ran the SQL schema in Supabase
+- Verify your Supabase URL and anon key are correct in `.env.local`
+- Check that your Supabase project is active (not paused)
 
 **Issue:** Database errors
-- The database file will be created automatically on first run
-- Make sure you have write permissions in the project directory
+- Verify your Supabase credentials are correct
+- Check the Supabase dashboard for any errors
 
 **Issue:** Port 3000 is already in use
 - Run on a different port: `npm run dev -- -p 3001`

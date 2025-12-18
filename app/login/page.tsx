@@ -8,6 +8,7 @@ function LoginForm() {
   const searchParams = useSearchParams()
   // Always redirect to the game page (home page) after login
   const callbackUrl = searchParams.get('callbackUrl') || '/'
+  const error = searchParams.get('error')
 
   const handleGoogleSignIn = () => {
     // Redirect to home page after successful Google authentication
@@ -19,6 +20,17 @@ function LoginForm() {
       <div className="bg-white p-8 rounded-lg shadow-2xl max-w-md w-full">
         <h1 className="text-4xl font-bold text-center mb-2 text-purple-800">Jeopardy</h1>
         <p className="text-center text-gray-600 mb-8">Test your knowledge against the clock</p>
+
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-800 text-sm font-semibold">Authentication Error</p>
+            <p className="text-red-600 text-sm mt-1">
+              {error === 'OAuthCallback' 
+                ? 'There was an issue signing in with Google. Please try again.' 
+                : 'Please try signing in again.'}
+            </p>
+          </div>
+        )}
 
         <button
           onClick={handleGoogleSignIn}

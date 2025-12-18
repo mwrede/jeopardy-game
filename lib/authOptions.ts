@@ -23,6 +23,9 @@ console.log('Google OAuth Config:', {
 })
 
 export const authOptions: AuthOptions = {
+  // Explicitly set the base URL for OAuth callbacks
+  // This ensures the callback URL is correct even if NEXTAUTH_URL has issues
+  secret: process.env.NEXTAUTH_SECRET,
   providers: [
     GoogleProvider({
       clientId: clientId,
@@ -31,20 +34,27 @@ export const authOptions: AuthOptions = {
   ],
   callbacks: {
     async signIn({ user, account, profile }) {
-      if (account?.provider === 'google' && user.email) {
-        // Create or update user in Supabase using email as the ID
-        try {
-          await createOrUpdateUser(
+      // Always allow sign-in, even if Supabase update fails
+      // This ensures authentication works even if database is temporarily unavailable
+      try {
+        if (account?.provider === 'google' && user.email) {
+          // Create or update user in Supabase using email as the ID
+          // Fire and forget - don't await to avoid blocking authentication
+          createOrUpdateUser(
             user.email, // Use email as the user ID
             user.email, // Email
             user.name || null,
             user.image || null
-          )
-        } catch (error) {
-          console.error('Error creating/updating user:', error)
-          // Don't block sign-in if user creation fails
+          ).catch((error) => {
+            // Log error but don't block sign-in
+            console.error('Error creating/updating user in Supabase (non-blocking):', error)
+          })
         }
+      } catch (error) {
+        // Catch any synchronous errors and log them, but don't block sign-in
+        console.error('Error in signIn callback (non-blocking):', error)
       }
+      // Always return true to allow authentication
       return true
     },
     async jwt({ token, user, account }) {

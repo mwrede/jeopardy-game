@@ -29,7 +29,7 @@ export default function Navbar() {
                 pathname === '/' ? 'text-roboflow-purple' : 'text-gray-600 hover:text-roboflow-purple'
               }`}
             >
-              Today's Game
+              Today&apos;s Game
             </Link>
 
             <Link

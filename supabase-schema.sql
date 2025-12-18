@@ -59,25 +59,31 @@ ALTER TABLE games ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies
 -- Users can read all users
+DROP POLICY IF EXISTS "Users can read all users" ON users;
 CREATE POLICY "Users can read all users" ON users
   FOR SELECT USING (true);
 
 -- Users can insert/update their own user record
+DROP POLICY IF EXISTS "Users can insert their own record" ON users;
 CREATE POLICY "Users can insert their own record" ON users
   FOR INSERT WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Users can update their own record" ON users;
 CREATE POLICY "Users can update their own record" ON users
   FOR UPDATE USING (true);
 
 -- Everyone can read questions
+DROP POLICY IF EXISTS "Everyone can read questions" ON questions;
 CREATE POLICY "Everyone can read questions" ON questions
   FOR SELECT USING (true);
 
 -- Users can read all games
+DROP POLICY IF EXISTS "Users can read all games" ON games;
 CREATE POLICY "Users can read all games" ON games
   FOR SELECT USING (true);
 
 -- Users can insert their own games
+DROP POLICY IF EXISTS "Users can insert their own games" ON games;
 CREATE POLICY "Users can insert their own games" ON games
   FOR INSERT WITH CHECK (true);
 

@@ -30,7 +30,7 @@ export default function Instructions() {
 
       <div className="space-y-4">
         <p className="text-sm">
-          2 Categories are work related, and 1 is just for fun! A well rounded individual. The game is just like jeopardy, and no contestants because well I'm not fully there at realtime servers, but it's you against the clock. So be fast, and right.
+          2 Categories are work related, and 1 is just for fun! A well rounded individual. The game is just like jeopardy, and no contestants because well I&apos;m not fully there at realtime servers, but it&apos;s you against the clock. So be fast, and right.
         </p>
 
         <p className="font-semibold text-lg">

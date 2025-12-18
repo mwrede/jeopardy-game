@@ -168,7 +168,7 @@ export default function QuestionModal({ clue, onAnswer, onClose, currentScore }:
                 onClick={handleDontKnow}
                 className="flex-1 bg-purple-300 text-purple-900 font-bold py-3 px-6 rounded-lg hover:bg-purple-200 transition-colors"
               >
-                I Don't Know
+                I Don&apos;t Know
               </button>
             </div>
           </div>

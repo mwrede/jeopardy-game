@@ -65,7 +65,7 @@ export default function LeaderboardPage() {
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="bg-white rounded-lg shadow-lg p-8">
           <h1 className="text-4xl font-bold text-center mb-2 text-purple-800">
-            Today's Leaderboard
+            Today&apos;s Leaderboard
           </h1>
           {userRank !== null && (
             <p className="text-center text-lg text-purple-600 font-semibold mb-6">

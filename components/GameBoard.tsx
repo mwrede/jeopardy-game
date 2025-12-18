@@ -49,7 +49,7 @@ export default function GameBoard({ onGameComplete }: { onGameComplete: (score: 
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-lg shadow-lg">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold text-purple-800">Today's Game</h2>
+          <h2 className="text-3xl font-bold text-purple-800">Today&apos;s Game</h2>
           <div className="text-right">
             <p className="text-sm text-gray-600">Your Score</p>
             <p className={`text-4xl font-bold ${score >= 0 ? 'text-purple-600' : 'text-red-600'}`}>

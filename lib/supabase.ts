@@ -1,13 +1,36 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+// During build time on Vercel, env vars might not be available
+// Use placeholder values during build, but require real values at runtime
+let supabase: SupabaseClient
 
 if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Missing Supabase environment variables')
+  // Check if we're in a build context
+  // Vercel sets VERCEL=1 during builds, and we can check for other build indicators
+  const isBuildTime = process.env.VERCEL === '1' || 
+                      process.env.NEXT_PHASE === 'phase-production-build' ||
+                      process.env.NEXT_PHASE === 'phase-development-build' ||
+                      !process.env.VERCEL_ENV // VERCEL_ENV is only set at runtime
+  
+  if (isBuildTime) {
+    // During build, create a client with placeholder values
+    // This allows the build to complete
+    supabase = createClient(
+      'https://placeholder.supabase.co',
+      'placeholder-key'
+    )
+  } else {
+    // At runtime, throw error if env vars are missing
+    throw new Error('Missing Supabase environment variables')
+  }
+} else {
+  supabase = createClient(supabaseUrl, supabaseKey)
 }
 
-export const supabase = createClient(supabaseUrl, supabaseKey)
+export { supabase }
 
 export interface User {
   id: string

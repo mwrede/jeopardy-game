@@ -146,13 +146,15 @@ export default function Home() {
                 <p className="text-gray-600 mb-6">Saving your score...</p>
               ) : (
                 <>
-                  <p className="text-gray-600 mb-2">
+                  <p className="text-gray-600 mb-4">
                     {hasPlayedToday ? "You've already played today!" : "Your score has been saved to the leaderboard!"}
                   </p>
                   {userRank !== null && (
-                    <p className="text-2xl font-bold text-purple-600 mb-6">
-                      Your Rank: #{userRank}
-                    </p>
+                    <div className="mb-6">
+                      <p className="text-3xl font-bold text-purple-600">
+                        Your Rank: #{userRank}
+                      </p>
+                    </div>
                   )}
                 </>
               )}
@@ -175,7 +177,7 @@ export default function Home() {
                             : 'bg-gradient-to-r from-purple-200 to-purple-300 text-purple-900'
                         } ${isCurrentUser ? 'ring-4 ring-purple-600' : ''}`}
                       >
-                        <div className="text-2xl font-bold w-12 text-center">
+                        <div className="text-2xl font-bold w-16 text-center">
                           {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
                         </div>
                         <div className="flex-1">
@@ -186,6 +188,7 @@ export default function Home() {
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-bold">${entry.score.toLocaleString()}</p>
+                          <p className="text-sm opacity-75">Rank #{index + 1}</p>
                         </div>
                       </div>
                     )

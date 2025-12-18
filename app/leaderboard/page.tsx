@@ -97,8 +97,8 @@ export default function LeaderboardPage() {
                         : 'bg-purple-50 text-gray-800'
                     } ${isCurrentUser ? 'ring-4 ring-purple-600' : ''}`}
                   >
-                  <div className="text-2xl font-bold w-12 text-center">
-                    {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
+                  <div className="text-2xl font-bold w-16 text-center">
+                    {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
                   </div>
 
                   <div className="flex items-center gap-3 flex-1">
@@ -115,9 +115,7 @@ export default function LeaderboardPage() {
                     )}
                     <div>
                       <p className="font-bold text-lg">{entry.name.split(' ')[0]}</p>
-                      <p className="text-sm opacity-75">
-                        {new Date(entry.completed_at).toLocaleTimeString()}
-                      </p>
+                      <p className="text-sm opacity-75">Rank #{index + 1}</p>
                     </div>
                   </div>
 

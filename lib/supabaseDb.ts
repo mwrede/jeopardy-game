@@ -197,39 +197,23 @@ export async function getMostRecentGameScore(userId: string): Promise<{ score: n
 }
 
 export async function getLeaderboard(date: string, limit: number = 1000): Promise<LeaderboardEntry[]> {
-  // Get all games regardless of date - force fresh query
-  console.log('=== LEADERBOARD QUERY START ===')
-  console.log('Querying all games from Supabase (ignoring date filter)')
-  
+  // Simple query: get all games, group by user, get best score for each
   const { data: games, error: gamesError } = await supabase
     .from('games')
-    .select('user_id, score, completed_at, date')
-    .order('completed_at', { ascending: false }) // Order by most recent first
+    .select('user_id, score, completed_at')
+    .order('completed_at', { ascending: false })
 
   if (gamesError) {
-    console.error('❌ Error fetching games:', gamesError)
+    console.error('Error fetching games:', gamesError)
     throw gamesError
   }
 
-  console.log('✅ Games found:', games?.length || 0)
-  if (games && games.length > 0) {
-    console.log('Sample games:', games.slice(0, 3).map(g => ({ user_id: g.user_id, score: g.score, date: g.date })))
-  }
-
   if (!games || games.length === 0) {
-    // Try to get all games to see what dates exist (for debugging)
-    const { data: allGames } = await supabase
-      .from('games')
-      .select('date')
-      .limit(10)
-    
-    console.log('Sample dates in database:', allGames?.map(g => g.date) || [])
     return []
   }
 
-  // Group by user and get their best score
+  // Group by user_id and get their best score
   const userScores = new Map<string, { score: number; completed_at: string }>()
-
   games.forEach((game) => {
     const existing = userScores.get(game.user_id)
     if (!existing || game.score > existing.score) {
@@ -240,107 +224,53 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
     }
   })
 
-  // Get user details
   const userIds = Array.from(userScores.keys())
-  console.log('✅ Unique user IDs from games:', userIds.length, userIds)
-  
   if (userIds.length === 0) {
-    console.log('No user IDs found in games')
     return []
   }
 
-  const { data: users, error: usersError } = await supabase
+  // Get user details (optional - will use user_id as name if not found)
+  const { data: users } = await supabase
     .from('users')
-    .select('id, name, image, username')
+    .select('id, name, image')
     .in('id', userIds)
 
-  if (usersError) {
-    console.error('Error fetching users:', usersError)
-    throw usersError
-  }
+  const userMap = new Map((users || []).map(u => [u.id, u]))
 
-  console.log('✅ Users found:', users?.length || 0, 'for', userIds.length, 'user IDs')
-
-  // If we have games but no users, there's a mismatch
-  if (!users || users.length === 0) {
-    console.error('❌ No users found for user IDs:', userIds)
-    console.error('This suggests user_id in games table does not match id in users table')
-    return []
-  }
-
-  // Check for mismatches - users with games but no user record
-  const foundUserIds = new Set(users.map(u => u.id))
-  const missingUserIds = userIds.filter(id => !foundUserIds.has(id))
-  if (missingUserIds.length > 0) {
-    console.warn('⚠️ Some user IDs from games not found in users table:', missingUserIds)
-    console.warn('⚠️ These users will still be included in leaderboard with fallback data')
-  }
-
-  // Create a map of user details for quick lookup
-  const userDetailsMap = new Map(users.map(u => [u.id, u]))
-
-  // Combine data - include ALL users with games, even if they don't have a user record
-  // Rank is calculated consistently: same score = same rank, next rank skips
-  const leaderboardEntries = userIds
-    .map((userId) => {
-      const scoreData = userScores.get(userId)
-      if (!scoreData) {
-        console.warn(`No score data found for user ${userId}`)
-        return null
-      }
-      
-      // Get user details if available, otherwise use fallback
-      const userDetails = userDetailsMap.get(userId)
-      const userName = userDetails?.name || userId // Use user_id as name if user not found
-      
-      // If they have a game entry, they've finished
-      const hasFinished = !!scoreData
-      return {
-        user_id: userId,
-        name: userName,
-        image: userDetails?.image || null,
-        score: scoreData.score,
-        completed_at: scoreData.completed_at,
-        has_finished: hasFinished,
-      }
-    })
-    .filter((entry): entry is NonNullable<typeof entry> => entry !== null)
-    .sort((a, b) => {
-      // Sort by score descending, then by completed_at ascending (earlier = better rank)
-      if (b.score !== a.score) {
-        return b.score - a.score
-      }
-      return new Date(a.completed_at).getTime() - new Date(b.completed_at).getTime()
-    })
-
-  // Calculate ranks: same score = same rank, next rank skips
-  const leaderboard: LeaderboardEntry[] = leaderboardEntries.map((entry, index) => {
-    let rank = index + 1
-    if (index > 0) {
-      const prevEntry = leaderboardEntries[index - 1]
-      if (entry.score === prevEntry.score) {
-        // Same score as previous entry, use same rank
-        // Find the first entry with this score to get its rank
-        for (let i = index - 1; i >= 0; i--) {
-          if (leaderboardEntries[i].score === entry.score) {
-            rank = i + 1
-          } else {
-            break
-          }
-        }
-      }
-    }
+  // Build leaderboard entries - include ALL users with games
+  const entries: LeaderboardEntry[] = userIds.map((userId) => {
+    const scoreData = userScores.get(userId)!
+    const user = userMap.get(userId)
     return {
-      ...entry,
-      rank: rank,
+      user_id: userId,
+      name: user?.name || userId,
+      image: user?.image || null,
+      score: scoreData.score,
+      completed_at: scoreData.completed_at,
+      has_finished: true,
+      rank: 0, // Will be calculated below
     }
-  }).slice(0, limit)
+  })
 
-  console.log('✅ Final leaderboard entries:', leaderboard.length)
-  console.log('Leaderboard summary:', leaderboard.map(e => ({ name: e.name, score: e.score, rank: e.rank })))
-  console.log('=== LEADERBOARD QUERY END ===')
+  // Sort by score descending, then by completed_at ascending
+  entries.sort((a, b) => {
+    if (b.score !== a.score) {
+      return b.score - a.score
+    }
+    return new Date(a.completed_at).getTime() - new Date(b.completed_at).getTime()
+  })
 
-  return leaderboard
+  // Assign ranks
+  entries.forEach((entry, index) => {
+    if (index === 0) {
+      entry.rank = 1
+    } else {
+      const prevEntry = entries[index - 1]
+      entry.rank = prevEntry.score === entry.score ? prevEntry.rank : index + 1
+    }
+  })
+
+  return entries.slice(0, limit)
 }
 
 export interface Question {

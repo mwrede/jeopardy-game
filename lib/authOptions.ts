@@ -22,6 +22,14 @@ console.log('Google OAuth Config:', {
   clientIdPrefix: clientId?.substring(0, 20),
 })
 
+// Ensure NEXTAUTH_URL doesn't have trailing slash
+const nextAuthUrl = process.env.NEXTAUTH_URL?.replace(/\/$/, '') || ''
+
+if (nextAuthUrl && process.env.NODE_ENV === 'production') {
+  console.log('NextAuth URL:', nextAuthUrl)
+  console.log('Expected callback URL:', `${nextAuthUrl}/api/auth/callback/google`)
+}
+
 export const authOptions: AuthOptions = {
   // Explicitly set the base URL for OAuth callbacks
   // This ensures the callback URL is correct even if NEXTAUTH_URL has issues

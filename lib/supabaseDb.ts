@@ -86,19 +86,40 @@ export async function saveGame(username: string, score: number, date: string): P
     }
 
     // Save game using username directly as user_id (since username = id)
-    const { data, error } = await supabase.from('games').insert({
+    const gameData = {
       user_id: username, // Use username directly since username = id
       score,
       date,
-    }).select()
+    }
+    
+    console.log('Inserting game data:', gameData)
+    
+    const { data, error } = await supabase.from('games').insert(gameData).select()
 
     if (error) {
       console.error('Error saving game to Supabase:', error)
+      console.error('Error code:', error.code)
       console.error('Error details:', JSON.stringify(error, null, 2))
+      console.error('Game data attempted:', gameData)
       throw new Error(`Supabase error: ${error.message || JSON.stringify(error)}`)
     }
 
     console.log('Game saved successfully:', data)
+    
+    // Verify the game was saved by querying it back
+    const { data: verifyData, error: verifyError } = await supabase
+      .from('games')
+      .select('*')
+      .eq('user_id', username)
+      .eq('date', date)
+      .order('completed_at', { ascending: false })
+      .limit(1)
+    
+    if (verifyError) {
+      console.error('Error verifying saved game:', verifyError)
+    } else {
+      console.log('Verified saved game exists:', verifyData?.length || 0, 'game(s) found')
+    }
   } catch (error) {
     console.error('Unexpected error in saveGame:', error)
     throw error
@@ -184,14 +205,37 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
 
   // Get user details
   const userIds = Array.from(userScores.keys())
+  console.log('User IDs from games:', userIds)
+  
+  if (userIds.length === 0) {
+    console.log('No user IDs found in games')
+    return []
+  }
+
   const { data: users, error: usersError } = await supabase
     .from('users')
-    .select('id, name, image')
+    .select('id, name, image, username')
     .in('id', userIds)
 
   if (usersError) {
     console.error('Error fetching users:', usersError)
     throw usersError
+  }
+
+  console.log('Users found:', users?.length || 0, 'for', userIds.length, 'user IDs')
+
+  // If we have games but no users, there's a mismatch
+  if (!users || users.length === 0) {
+    console.error('No users found for user IDs:', userIds)
+    console.error('This suggests user_id in games table does not match id in users table')
+    return []
+  }
+
+  // Check for mismatches
+  const foundUserIds = new Set(users.map(u => u.id))
+  const missingUserIds = userIds.filter(id => !foundUserIds.has(id))
+  if (missingUserIds.length > 0) {
+    console.warn('Some user IDs from games not found in users table:', missingUserIds)
   }
 
   // Combine data, sort by score (descending), and assign ranks
@@ -200,9 +244,10 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
     .map((user) => {
       const scoreData = userScores.get(user.id)
       if (!scoreData) {
+        console.warn(`No score data found for user ${user.id} (username: ${user.username})`)
         return null
       }
-      // If they have a game entry for today, they've finished
+      // If they have a game entry, they've finished
       const hasFinished = !!scoreData
       return {
         user_id: user.id,

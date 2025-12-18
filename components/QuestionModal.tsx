@@ -15,6 +15,7 @@ export default function QuestionModal({ clue, onAnswer, onClose, currentScore }:
   const [timeElapsed, setTimeElapsed] = useState(0)
   const [showResult, setShowResult] = useState(false)
   const [isCorrect, setIsCorrect] = useState(false)
+  const [isDontKnow, setIsDontKnow] = useState(false)
   const [showDailyDoubleWager, setShowDailyDoubleWager] = useState(clue.isDailyDouble || false)
   const [wager, setWager] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -73,11 +74,12 @@ export default function QuestionModal({ clue, onAnswer, onClose, currentScore }:
   }
 
   const handleDontKnow = () => {
+    setIsDontKnow(true)
     setIsCorrect(false)
     setShowResult(true)
 
     setTimeout(() => {
-      onAnswer(-currentValue)
+      onAnswer(0) // No points lost for "I Don't Know"
     }, 2000)
   }
 
@@ -179,9 +181,11 @@ export default function QuestionModal({ clue, onAnswer, onClose, currentScore }:
           </div>
         ) : (
           <div className="text-center space-y-4">
-            <div className={`text-4xl font-bold ${isCorrect ? 'text-green-300' : 'text-red-300'}`}>
-              {isCorrect ? 'CORRECT!' : 'INCORRECT'}
-            </div>
+            {!isDontKnow && (
+              <div className={`text-4xl font-bold ${isCorrect ? 'text-green-300' : 'text-red-300'}`}>
+                {isCorrect ? 'CORRECT!' : 'INCORRECT'}
+              </div>
+            )}
             <div className="bg-white p-4 rounded-lg">
               <p className="text-gray-600 text-sm mb-2">Correct answer:</p>
               <p className="text-xl font-semibold text-gray-800">{clue.answer}</p>
@@ -191,7 +195,7 @@ export default function QuestionModal({ clue, onAnswer, onClose, currentScore }:
                 +${Math.max(0, currentValue - pointsLost).toLocaleString()}
               </p>
             )}
-            {!isCorrect && (
+            {!isCorrect && !isDontKnow && (
               <p className="text-red-300 text-2xl font-bold">
                 -${currentValue.toLocaleString()}
               </p>

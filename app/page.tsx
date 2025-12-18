@@ -160,18 +160,21 @@ export default function Home() {
       const saveResult = await saveResponse.json()
       console.log('Game saved successfully:', saveResult)
 
-      // Wait a bit longer for Supabase to process the insert and ensure it's available
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Fetch leaderboard after saving to get updated rankings - force fresh data
+      // Aggressively fetch leaderboard multiple times to ensure we get the update
+      // The view might take a moment to reflect the new game
       console.log('Fetching updated leaderboard after game save...')
+      
+      // Fetch immediately
       await fetchLeaderboard()
       
-      // Fetch again after another short delay to ensure data is fully propagated
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      await fetchLeaderboard()
+      // Fetch multiple times with delays to catch the view update
+      setTimeout(() => fetchLeaderboard(), 500)
+      setTimeout(() => fetchLeaderboard(), 1000)
+      setTimeout(() => fetchLeaderboard(), 2000)
+      setTimeout(() => fetchLeaderboard(), 3000)
+      setTimeout(() => fetchLeaderboard(), 5000)
       
-      console.log('Leaderboard updated after game completion')
+      console.log('Leaderboard refresh scheduled multiple times')
     } catch (error) {
       console.error('Failed to save score:', error)
       alert('Failed to save your score. Please try again.')
@@ -197,29 +200,26 @@ export default function Home() {
           },
           (payload) => {
             console.log('New game inserted via realtime on results page:', payload.new)
-            // Refresh leaderboard when a new game is saved
+            // Refresh leaderboard when a new game is saved - multiple times to ensure we catch it
             fetchLeaderboard()
+            setTimeout(() => fetchLeaderboard(), 500)
+            setTimeout(() => fetchLeaderboard(), 1000)
           }
         )
         .subscribe()
 
-      // Refresh immediately with a delay to ensure data is available
-      const immediateRefresh = setTimeout(() => {
-        console.log('Immediate leaderboard refresh after game completion')
-        fetchLeaderboard()
-      }, 2000)
+      // Aggressively refresh multiple times to ensure we get the update
+      const refresh1 = setTimeout(() => fetchLeaderboard(), 500)
+      const refresh2 = setTimeout(() => fetchLeaderboard(), 1000)
+      const refresh3 = setTimeout(() => fetchLeaderboard(), 2000)
+      const refresh4 = setTimeout(() => fetchLeaderboard(), 3000)
+      const refresh5 = setTimeout(() => fetchLeaderboard(), 5000)
 
-      // Refresh again after a bit more time
-      const secondRefresh = setTimeout(() => {
-        console.log('Second leaderboard refresh after game completion')
-        fetchLeaderboard()
-      }, 4000)
-
-      // Set up auto-refresh every 3 seconds as a fallback
+      // Set up auto-refresh every 2 seconds as a fallback
       const interval = setInterval(() => {
         console.log('Auto-refreshing leaderboard (fallback)...')
         fetchLeaderboard()
-      }, 3000)
+      }, 2000)
 
       // Also refresh when page comes into focus
       const handleFocus = () => {
@@ -231,8 +231,11 @@ export default function Home() {
       return () => {
         // Clean up subscription and intervals
         supabase.removeChannel(channel)
-        clearTimeout(immediateRefresh)
-        clearTimeout(secondRefresh)
+        clearTimeout(refresh1)
+        clearTimeout(refresh2)
+        clearTimeout(refresh3)
+        clearTimeout(refresh4)
+        clearTimeout(refresh5)
         clearInterval(interval)
         window.removeEventListener('focus', handleFocus)
       }

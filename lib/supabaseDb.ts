@@ -197,22 +197,39 @@ export async function getMostRecentGameScore(userId: string): Promise<{ score: n
 }
 
 export async function getLeaderboard(date: string, limit: number = 1000): Promise<LeaderboardEntry[]> {
-  // Query the leaderboard view directly
+  // Query the leaderboard view directly with explicit columns
+  // Try multiple approaches to ensure we get the data
+  console.log('Querying leaderboard view from Supabase...')
+  
   const { data: leaderboard, error } = await supabase
     .from('leaderboard')
-    .select('*')
+    .select('user_id, name, image, score, completed_at')
+    .order('score', { ascending: false })
 
   if (error) {
     console.error('Error fetching leaderboard from Supabase:', error)
+    console.error('Error details:', JSON.stringify(error, null, 2))
     throw error
   }
 
+  console.log('Raw leaderboard data from view:', leaderboard)
+  console.log(`Fetched ${leaderboard?.length || 0} entries from leaderboard view`)
+
   if (!leaderboard || leaderboard.length === 0) {
-    console.log('No entries found in leaderboard view')
+    console.log('No entries found in leaderboard view - checking if view exists and has data')
+    // Try a simple test query to see if the view is accessible
+    const { data: testData, error: testError } = await supabase
+      .from('leaderboard')
+      .select('user_id')
+      .limit(1)
+    
+    if (testError) {
+      console.error('Test query error:', testError)
+    } else {
+      console.log('Test query result:', testData)
+    }
     return []
   }
-
-  console.log(`Fetched ${leaderboard.length} entries from leaderboard view`)
 
   // The view returns: user_id, name, image, score, completed_at
   // We need to add rank and has_finished

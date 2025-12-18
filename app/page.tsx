@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import Instructions from '@/components/Instructions'
 import GameBoard from '@/components/GameBoard'
+import { supabase } from '@/lib/supabase'
 
 export default function Home() {
   const { data: session, status } = useSession()
@@ -182,8 +183,26 @@ export default function Home() {
   // Auto-refresh leaderboard when game is completed
   useEffect(() => {
     if (gameCompleted && !saving) {
-      console.log('Game completed, setting up leaderboard auto-refresh')
+      console.log('Game completed, setting up leaderboard auto-refresh and realtime subscription')
       
+      // Set up realtime subscription to games table
+      const channel = supabase
+        .channel('games-changes-results')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'games',
+          },
+          (payload) => {
+            console.log('New game inserted via realtime on results page:', payload.new)
+            // Refresh leaderboard when a new game is saved
+            fetchLeaderboard()
+          }
+        )
+        .subscribe()
+
       // Refresh immediately with a delay to ensure data is available
       const immediateRefresh = setTimeout(() => {
         console.log('Immediate leaderboard refresh after game completion')
@@ -196,11 +215,11 @@ export default function Home() {
         fetchLeaderboard()
       }, 4000)
 
-      // Set up auto-refresh every 2 seconds (more frequent)
+      // Set up auto-refresh every 3 seconds as a fallback
       const interval = setInterval(() => {
-        console.log('Auto-refreshing leaderboard...')
+        console.log('Auto-refreshing leaderboard (fallback)...')
         fetchLeaderboard()
-      }, 2000)
+      }, 3000)
 
       // Also refresh when page comes into focus
       const handleFocus = () => {
@@ -210,6 +229,8 @@ export default function Home() {
       window.addEventListener('focus', handleFocus)
 
       return () => {
+        // Clean up subscription and intervals
+        supabase.removeChannel(channel)
         clearTimeout(immediateRefresh)
         clearTimeout(secondRefresh)
         clearInterval(interval)

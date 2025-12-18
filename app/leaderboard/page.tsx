@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
+import { supabase } from '@/lib/supabase'
 
 interface LeaderboardEntry {
   user_id: string
@@ -90,11 +91,30 @@ export default function LeaderboardPage() {
       // Fetch immediately
       fetchLeaderboard()
       
-      // Refresh every 3 seconds to get latest data from Supabase
+      // Set up realtime subscription to games table
+      console.log('Setting up realtime subscription to games table...')
+      const channel = supabase
+        .channel('games-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'games',
+          },
+          (payload) => {
+            console.log('New game inserted via realtime:', payload.new)
+            // Refresh leaderboard when a new game is saved
+            fetchLeaderboard()
+          }
+        )
+        .subscribe()
+
+      // Also refresh every 5 seconds as a fallback
       const interval = setInterval(() => {
-        console.log('Auto-refreshing leaderboard...')
+        console.log('Auto-refreshing leaderboard (fallback)...')
         fetchLeaderboard()
-      }, 3000)
+      }, 5000)
       
       // Also refresh when page comes into focus
       const handleFocus = () => {
@@ -104,6 +124,8 @@ export default function LeaderboardPage() {
       window.addEventListener('focus', handleFocus)
       
       return () => {
+        // Clean up subscription and intervals
+        supabase.removeChannel(channel)
         clearInterval(interval)
         window.removeEventListener('focus', handleFocus)
       }

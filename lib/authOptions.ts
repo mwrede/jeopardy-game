@@ -26,6 +26,7 @@ export const authOptions: AuthOptions = {
   // Explicitly set the base URL for OAuth callbacks
   // This ensures the callback URL is correct even if NEXTAUTH_URL has issues
   secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === 'development',
   providers: [
     GoogleProvider({
       clientId: clientId,
@@ -34,24 +35,24 @@ export const authOptions: AuthOptions = {
   ],
   callbacks: {
     async signIn({ user, account, profile }) {
-      // Create or update user in Supabase when signing in with Google
+      // Always allow sign-in first - don't block on Supabase
+      // Create or update user in Supabase asynchronously (fire and forget)
       if (account?.provider === 'google' && user.email) {
-        try {
-          // Await the user creation to ensure it completes
-          // This is important for proper user data storage
-          await createOrUpdateUser(
-            user.email, // Use email as the user ID
-            user.email, // Email
-            user.name || null,
-            user.image || null
-          )
-          console.log('✅ User created/updated in Supabase:', user.email)
-        } catch (error) {
-          // Log error but don't block sign-in
-          // This allows authentication to proceed even if Supabase is temporarily unavailable
-          console.error('⚠️ Error creating/updating user in Supabase (non-blocking):', error)
-          // Don't throw - allow authentication to proceed
-        }
+        // Don't await - run in background to avoid blocking authentication
+        createOrUpdateUser(
+          user.email, // Use email as the user ID
+          user.email, // Email
+          user.name || null,
+          user.image || null
+        )
+          .then(() => {
+            console.log('✅ User created/updated in Supabase:', user.email)
+          })
+          .catch((error) => {
+            // Log error but don't block sign-in
+            // This allows authentication to proceed even if Supabase is temporarily unavailable
+            console.error('⚠️ Error creating/updating user in Supabase (non-blocking):', error)
+          })
       }
       // Always return true to allow authentication
       return true

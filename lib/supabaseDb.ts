@@ -148,9 +148,12 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
     .map((entry, index, array) => {
       // Calculate rank: same score = same rank
       let rank = index + 1
-      if (index > 0 && entry.score === array[index - 1].score) {
-        // Same score as previous entry, use same rank
-        rank = array[index - 1].rank || index + 1
+      if (index > 0) {
+        const prevEntry = array[index - 1] as LeaderboardEntry & { rank?: number }
+        if (entry.score === prevEntry.score) {
+          // Same score as previous entry, use same rank
+          rank = prevEntry.rank || index + 1
+        }
       }
       return {
         ...entry,

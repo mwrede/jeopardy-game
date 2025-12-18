@@ -125,7 +125,8 @@ export default function Home() {
       const saveResult = await saveResponse.json()
       console.log('Game saved successfully:', saveResult)
 
-      // Fetch leaderboard after saving to get updated rankings
+      // Wait a moment for Supabase to process the insert, then fetch leaderboard
+      await new Promise(resolve => setTimeout(resolve, 500))
       await fetchLeaderboard()
     } catch (error) {
       console.error('Failed to save score:', error)

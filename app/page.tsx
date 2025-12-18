@@ -112,25 +112,37 @@ export default function Home() {
       }
       
       const leaderboardData = await leaderboardResponse.json()
+      
+      // Ensure we have an array
+      const validLeaderboard = Array.isArray(leaderboardData) ? leaderboardData : []
+      
       console.log(`[${timestamp}] Leaderboard fetched:`, { 
-        count: leaderboardData.length,
-        user_ids: leaderboardData.map((e: any) => e.user_id)
+        count: validLeaderboard.length,
+        user_ids: validLeaderboard.map((e: any) => e.user_id),
+        scores: validLeaderboard.map((e: any) => e.score),
+        current_user_id: session?.user?.id
       })
       
-      setLeaderboard(leaderboardData) // Show all entries, not just top 3
+      setLeaderboard(validLeaderboard) // Show all entries
 
       // Find user's rank from leaderboard data
       if (session?.user?.id) {
-        const userEntry = leaderboardData.find((entry: any) => entry.user_id === session.user?.id)
+        const userEntry = validLeaderboard.find((entry: any) => entry.user_id === session.user?.id)
         if (userEntry) {
-          console.log(`[${timestamp}] User rank found:`, userEntry.rank, 'score:', userEntry.score)
+          console.log(`[${timestamp}] User rank found:`, userEntry.rank, 'score:', userEntry.score, 'name:', userEntry.name)
           setUserRank(userEntry.rank || null)
+          // Update finalScore if it's different (in case leaderboard has more recent data)
+          if (userEntry.score !== finalScore) {
+            console.log(`[${timestamp}] Updating finalScore from ${finalScore} to ${userEntry.score}`)
+            setFinalScore(userEntry.score)
+          }
         } else {
-          console.warn(`[${timestamp}] User ${session.user.id} not found in leaderboard`)
+          console.warn(`[${timestamp}] User ${session.user.id} not found in leaderboard. Available user_ids:`, validLeaderboard.map((e: any) => e.user_id))
         }
       }
     } catch (error) {
       console.error('Failed to fetch leaderboard:', error)
+      // Don't clear the leaderboard on error, keep what we have
     }
   }
 
@@ -292,9 +304,14 @@ export default function Home() {
               )}
             </div>
 
-            {!saving && leaderboard.length > 0 && (
+            {!saving && (
               <div className="mb-8">
                 <h3 className="text-2xl font-bold text-center mb-4 text-purple-800">All Players</h3>
+                {leaderboard.length === 0 ? (
+                  <div className="text-center py-8 text-gray-600">
+                    <p>Loading leaderboard...</p>
+                  </div>
+                ) : (
                 <div className="overflow-x-auto -mx-4 sm:mx-0">
                   <div className="inline-block min-w-full align-middle">
                     <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
@@ -367,6 +384,7 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
+                )}
               </div>
             )}
 

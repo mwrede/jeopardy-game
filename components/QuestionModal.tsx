@@ -73,7 +73,12 @@ export default function QuestionModal({ clue, onAnswer, onClose, currentScore }:
   }
 
   const handleDontKnow = () => {
-    onAnswer(0)
+    setIsCorrect(false)
+    setShowResult(true)
+
+    setTimeout(() => {
+      onAnswer(0)
+    }, 2000)
   }
 
   const handleDailyDoubleSubmit = () => {

@@ -33,8 +33,60 @@ CREATE TABLE IF NOT EXISTS games (
   date DATE NOT NULL
 );
 
--- Note: Leaderboard is computed dynamically from the games table in the application
--- No view or table needed - we query games directly for real-time updates
+-- Create leaderboard table to store current leaderboard state
+CREATE TABLE IF NOT EXISTS leaderboard (
+  user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  image TEXT,
+  score INTEGER NOT NULL,
+  completed_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create index for faster sorting
+CREATE INDEX IF NOT EXISTS idx_leaderboard_score ON leaderboard(score DESC, completed_at ASC);
+
+-- Function to update leaderboard when a game is saved
+CREATE OR REPLACE FUNCTION update_leaderboard()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Insert or update the leaderboard entry with the most recent game for this user
+  INSERT INTO leaderboard (user_id, name, image, score, completed_at, updated_at)
+  SELECT 
+    NEW.user_id,
+    u.name,
+    u.image,
+    NEW.score,
+    NEW.completed_at,
+    NOW()
+  FROM users u
+  WHERE u.id = NEW.user_id
+  ON CONFLICT (user_id) 
+  DO UPDATE SET
+    -- Only update if this is a more recent game or a better score
+    score = CASE 
+      WHEN NEW.completed_at > leaderboard.completed_at THEN NEW.score
+      WHEN NEW.score > leaderboard.score AND NEW.completed_at = leaderboard.completed_at THEN NEW.score
+      ELSE leaderboard.score
+    END,
+    completed_at = CASE 
+      WHEN NEW.completed_at > leaderboard.completed_at THEN NEW.completed_at
+      ELSE leaderboard.completed_at
+    END,
+    name = COALESCE((SELECT name FROM users WHERE id = NEW.user_id), leaderboard.name),
+    image = COALESCE((SELECT image FROM users WHERE id = NEW.user_id), leaderboard.image),
+    updated_at = NOW();
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to automatically update leaderboard when a game is inserted
+DROP TRIGGER IF EXISTS trigger_update_leaderboard ON games;
+CREATE TRIGGER trigger_update_leaderboard
+  AFTER INSERT ON games
+  FOR EACH ROW
+  EXECUTE FUNCTION update_leaderboard();
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_games_user_id ON games(user_id);

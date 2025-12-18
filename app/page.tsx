@@ -95,12 +95,14 @@ export default function Home() {
   }
 
   const handleGameComplete = async (score: number) => {
+    console.log('handleGameComplete called with score:', score)
     setFinalScore(score)
     setGameCompleted(true)
     setSaving(true)
 
     try {
-      await fetch('/api/game/save', {
+      console.log('Saving game score to Supabase:', score)
+      const saveResponse = await fetch('/api/game/save', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -108,10 +110,19 @@ export default function Home() {
         body: JSON.stringify({ score }),
       })
 
-      // Fetch leaderboard after saving
+      if (!saveResponse.ok) {
+        const errorData = await saveResponse.json().catch(() => ({}))
+        throw new Error(errorData.error || `Failed to save score: ${saveResponse.statusText}`)
+      }
+
+      const saveResult = await saveResponse.json()
+      console.log('Game saved successfully:', saveResult)
+
+      // Fetch leaderboard after saving to get updated rankings
       await fetchLeaderboard()
     } catch (error) {
       console.error('Failed to save score:', error)
+      alert('Failed to save your score. Please try again.')
     } finally {
       setSaving(false)
     }

@@ -63,7 +63,10 @@ export default function FinalJeopardy({ currentScore, onComplete, finalJeopardy 
     setStage('result')
 
     const finalScore = correct ? currentScore + wager : currentScore - wager
+    console.log('Final Jeopardy completed. Final score:', finalScore, 'Current score:', currentScore, 'Wager:', wager, 'Correct:', correct)
+    
     setTimeout(() => {
+      console.log('Calling onComplete with final score:', finalScore)
       onComplete(finalScore)
     }, 3000)
   }

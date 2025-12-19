@@ -179,47 +179,31 @@ export default function Home() {
   }
 
   const handleGameComplete = async (score: number) => {
-    console.log('handleGameComplete called with score:', score)
+    console.log('Game completed, score:', score)
     setFinalScore(score)
     setGameCompleted(true)
     setSaving(true)
 
     try {
-      console.log('Saving game score to Supabase:', score)
+      // Save game to Supabase
       const saveResponse = await fetch('/api/game/save', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ score }),
       })
 
       if (!saveResponse.ok) {
         const errorData = await saveResponse.json().catch(() => ({}))
-        const errorMessage = errorData.details || errorData.error || `Failed to save score: ${saveResponse.statusText}`
-        console.error('Save failed:', errorMessage)
-        throw new Error(errorMessage)
+        throw new Error(errorData.details || errorData.error || 'Failed to save score')
       }
 
-      const saveResult = await saveResponse.json()
-      console.log('Game saved successfully:', saveResult)
-
-      // Wait a moment for Supabase to process the insert
-      await new Promise(resolve => setTimeout(resolve, 500))
-
-      // Aggressively fetch leaderboard with force refresh to wipe cache
-      console.log('Fetching updated leaderboard after game save (FORCE REFRESH)...')
+      console.log('Game saved to Supabase')
       
-      // Force refresh immediately - this wipes cache and gets fresh data
-      await fetchLeaderboard(true)
+      // Wait a moment for Supabase to process
+      await new Promise(resolve => setTimeout(resolve, 1000))
       
-      // Fetch multiple times with force refresh to ensure we get the update
-      setTimeout(() => fetchLeaderboard(true), 1000)
-      setTimeout(() => fetchLeaderboard(true), 2000)
-      setTimeout(() => fetchLeaderboard(true), 3000)
-      setTimeout(() => fetchLeaderboard(true), 5000)
-      
-      console.log('Leaderboard refresh scheduled multiple times with force refresh')
+      // Fetch fresh leaderboard from Supabase
+      await fetchLeaderboard()
     } catch (error) {
       console.error('Failed to save score:', error)
       alert('Failed to save your score. Please try again.')

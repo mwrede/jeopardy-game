@@ -217,83 +217,39 @@ export async function getMostRecentGameScore(userId: string): Promise<{ score: n
 }
 
 export async function getLeaderboard(date: string, limit: number = 1000): Promise<LeaderboardEntry[]> {
-  // Query games table DIRECTLY from Supabase - verify we're using correct credentials
-  console.log('=== QUERYING GAMES TABLE DIRECTLY FROM SUPABASE ===')
-  console.log('Timestamp:', new Date().toISOString())
-  
-  // Verify environment variables are set - use the correct names
+  // Simple: Query games table directly from Supabase - always fresh, no caching
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   
-  console.log('=== ENVIRONMENT VARIABLE CHECK ===')
-  console.log('NEXT_PUBLIC_SUPABASE_URL exists:', !!supabaseUrl)
-  console.log('NEXT_PUBLIC_SUPABASE_ANON_KEY exists:', !!supabaseKey)
-  if (supabaseUrl) {
-    console.log('Supabase URL:', supabaseUrl.substring(0, 40) + '...')
-  }
-  if (supabaseKey) {
-    console.log('Supabase Key (first 30 chars):', supabaseKey.substring(0, 30) + '...')
-  }
-  
   if (!supabaseUrl || !supabaseKey) {
-    console.error('❌ Supabase environment variables not configured!')
-    console.error('Missing:', !supabaseUrl ? 'NEXT_PUBLIC_SUPABASE_URL' : '', !supabaseKey ? 'NEXT_PUBLIC_SUPABASE_ANON_KEY' : '')
     throw new Error('Supabase environment variables not configured')
   }
   
-  // Create a fresh Supabase client instance to avoid any caching
+  // Create fresh client for each query
   const { createClient } = await import('@supabase/supabase-js')
-  
-  // Create a fresh client for this query with no session persistence
-  const freshClient = createClient(supabaseUrl, supabaseKey, {
+  const client = createClient(supabaseUrl, supabaseKey, {
     auth: { persistSession: false },
-    db: { schema: 'public' },
   })
   
-  console.log('✅ Created fresh Supabase client')
-  console.log('Executing direct query to games table (SELECT * FROM games)...')
-  
-  // Get ALL games directly from the games table - no filters, no caching, fresh query every time
-  // Select all columns to verify we're getting the right data
-  const { data: allGames, error: gamesError } = await freshClient
+  // Get all games from games table
+  const { data: allGames, error: gamesError } = await client
     .from('games')
-    .select('*')
+    .select('user_id, score, completed_at')
     .order('completed_at', { ascending: false })
 
   if (gamesError) {
-    console.error('❌ Error fetching games:', gamesError)
-    console.error('Error code:', gamesError.code)
-    console.error('Error message:', gamesError.message)
-    console.error('Error details:', JSON.stringify(gamesError, null, 2))
+    console.error('Error fetching games:', gamesError)
     throw gamesError
   }
 
-  console.log(`✅ Raw games data from Supabase:`, JSON.stringify(allGames, null, 2))
-  console.log(`✅ Total games fetched: ${allGames?.length || 0}`)
-
   if (!allGames || allGames.length === 0) {
-    console.log('⚠️ No games found in games table - this might be a RLS issue or empty table')
-    console.log('⚠️ Check Supabase dashboard to verify games exist and RLS is configured correctly')
     return []
   }
 
-  // Log all games to see exactly what we got - show ALL fields
-  console.log('=== ALL GAMES FROM SUPABASE ===')
-  allGames.forEach((g: any, index: number) => {
-    console.log(`Game ${index + 1}:`, {
-      id: g.id,
-      user_id: g.user_id,
-      score: g.score,
-      completed_at: g.completed_at,
-      date: g.date
-    })
-  })
-
-  // Get the most recent game for each user
+  // Get most recent game for each user
   const userScores = new Map<string, { score: number; completed_at: string }>()
   allGames.forEach((game) => {
     if (!userScores.has(game.user_id)) {
-      // First occurrence is most recent (since ordered by completed_at DESC)
       userScores.set(game.user_id, {
         score: game.score,
         completed_at: game.completed_at,
@@ -302,26 +258,17 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
   })
 
   const userIds = Array.from(userScores.keys())
-  console.log(`Found ${userIds.length} unique users:`, userIds)
-  console.log('User scores map:', Array.from(userScores.entries()).map(([id, data]) => ({ user_id: id, score: data.score })))
-
   if (userIds.length === 0) {
     return []
   }
 
-  // Get user details using fresh client
-  const { data: users, error: usersError } = await freshClient
+  // Get user details
+  const { data: users } = await client
     .from('users')
     .select('id, name, image')
     .in('id', userIds)
 
-  if (usersError) {
-    console.error('Error fetching users:', usersError)
-    // Continue without user details - use user_id as name
-  }
-
   const userMap = new Map((users || []).map(u => [u.id, u]))
-  console.log(`Found ${userMap.size} users in users table`)
 
   // Build leaderboard entries from games data
   const entries: LeaderboardEntry[] = userIds.map((userId) => {

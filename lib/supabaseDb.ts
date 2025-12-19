@@ -221,15 +221,23 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
   console.log('=== QUERYING GAMES TABLE DIRECTLY FROM SUPABASE ===')
   console.log('Timestamp:', new Date().toISOString())
   
-  // Verify environment variables are set
+  // Verify environment variables are set - use the correct names
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   
-  console.log('Supabase URL configured:', supabaseUrl ? `YES (${supabaseUrl.substring(0, 30)}...)` : 'NO')
-  console.log('Supabase Key configured:', supabaseKey ? `YES (${supabaseKey.substring(0, 20)}...)` : 'NO')
+  console.log('=== ENVIRONMENT VARIABLE CHECK ===')
+  console.log('NEXT_PUBLIC_SUPABASE_URL exists:', !!supabaseUrl)
+  console.log('NEXT_PUBLIC_SUPABASE_ANON_KEY exists:', !!supabaseKey)
+  if (supabaseUrl) {
+    console.log('Supabase URL:', supabaseUrl.substring(0, 40) + '...')
+  }
+  if (supabaseKey) {
+    console.log('Supabase Key (first 30 chars):', supabaseKey.substring(0, 30) + '...')
+  }
   
   if (!supabaseUrl || !supabaseKey) {
     console.error('❌ Supabase environment variables not configured!')
+    console.error('Missing:', !supabaseUrl ? 'NEXT_PUBLIC_SUPABASE_URL' : '', !supabaseKey ? 'NEXT_PUBLIC_SUPABASE_ANON_KEY' : '')
     throw new Error('Supabase environment variables not configured')
   }
   
@@ -242,12 +250,14 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
     db: { schema: 'public' },
   })
   
-  console.log('Created fresh Supabase client, querying games table...')
+  console.log('✅ Created fresh Supabase client')
+  console.log('Executing direct query to games table (SELECT * FROM games)...')
   
   // Get ALL games directly from the games table - no filters, no caching, fresh query every time
+  // Select all columns to verify we're getting the right data
   const { data: allGames, error: gamesError } = await freshClient
     .from('games')
-    .select('user_id, score, completed_at')
+    .select('*')
     .order('completed_at', { ascending: false })
 
   if (gamesError) {
@@ -263,15 +273,21 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
 
   if (!allGames || allGames.length === 0) {
     console.log('⚠️ No games found in games table - this might be a RLS issue or empty table')
+    console.log('⚠️ Check Supabase dashboard to verify games exist and RLS is configured correctly')
     return []
   }
 
-  // Log all games to see exactly what we got
-  console.log('All games from Supabase:', allGames.map((g: any) => ({
-    user_id: g.user_id,
-    score: g.score,
-    completed_at: g.completed_at
-  })))
+  // Log all games to see exactly what we got - show ALL fields
+  console.log('=== ALL GAMES FROM SUPABASE ===')
+  allGames.forEach((g: any, index: number) => {
+    console.log(`Game ${index + 1}:`, {
+      id: g.id,
+      user_id: g.user_id,
+      score: g.score,
+      completed_at: g.completed_at,
+      date: g.date
+    })
+  })
 
   // Get the most recent game for each user
   const userScores = new Map<string, { score: number; completed_at: string }>()

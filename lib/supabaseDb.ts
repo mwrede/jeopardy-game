@@ -306,7 +306,12 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
 
   const userIds = Array.from(userScores.keys())
   console.log(`Found ${userIds.length} unique users:`, userIds)
-  console.log('User scores (most recent per user):', Array.from(userScores.entries()).map(([id, data]) => ({ user_id: id, score: data.score })))
+  console.log('User scores (most recent per user):', Array.from(userScores.entries()).map(([id, data]) => ({ 
+    user_id: id, 
+    score: data.score, 
+    game_id: data.game_id,
+    completed_at: data.completed_at 
+  })))
   
   if (userIds.length === 0) {
     return []

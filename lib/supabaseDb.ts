@@ -217,90 +217,83 @@ export async function getMostRecentGameScore(userId: string): Promise<{ score: n
 }
 
 export async function getLeaderboard(date: string, limit: number = 1000): Promise<LeaderboardEntry[]> {
-  // Query games table directly with user info
+  // Query games table directly - get most recent game per user
   console.log('=== QUERYING GAMES TABLE FROM SUPABASE ===')
-  console.log('Supabase URL configured:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'YES ✓' : 'NO ✗')
-  console.log('Supabase Key configured:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'YES ✓' : 'NO ✗')
-
-  // Fetch all games with user information
-  const { data: games, error: gamesError } = await supabase
+  
+  // Get all games ordered by completed_at descending (most recent first)
+  const { data: allGames, error: gamesError } = await supabase
     .from('games')
-    .select('id, user_id, score, completed_at, date')
-    .order('score', { ascending: false })
-    .order('completed_at', { ascending: true })
-
-  console.log('Raw Supabase query result:')
-  console.log('- data:', games)
-  console.log('- error:', gamesError)
-  console.log('- data is array?', Array.isArray(games))
-  console.log('- data length:', games?.length)
+    .select('user_id, score, completed_at')
+    .order('completed_at', { ascending: false })
 
   if (gamesError) {
-    console.error('❌ Error fetching from games table:', gamesError)
-    console.error('Error code:', gamesError.code)
-    console.error('Error message:', gamesError.message)
-    console.error('Error details:', JSON.stringify(gamesError, null, 2))
+    console.error('❌ Error fetching games:', gamesError)
     throw gamesError
   }
 
-  console.log('✅ Games table query successful')
-  console.log(`Number of games: ${games?.length || 0}`)
-
-  if (!games || games.length === 0) {
-    console.error('⚠️ Games table returned no data!')
-    console.error('This is likely a Row Level Security (RLS) issue.')
-    console.error('Check Supabase dashboard:')
-    console.error('1. Go to Table Editor → games table')
-    console.error('2. Click on "RLS" icon to see policies')
-    console.error('3. Ensure "Enable read access for all users" policy exists with USING (true)')
-    console.error('Or run the SQL in fix-rls-policies.sql to fix this')
+  if (!allGames || allGames.length === 0) {
+    console.log('No games found in games table')
     return []
   }
 
-  // Get unique user IDs to fetch user info
-  const userIds = [...new Set(games.map((g: any) => g.user_id))]
+  console.log(`✅ Fetched ${allGames.length} total games from games table`)
 
-  // Fetch user information for all players
+  // Get the most recent game for each user
+  const userScores = new Map<string, { score: number; completed_at: string }>()
+  allGames.forEach((game) => {
+    if (!userScores.has(game.user_id)) {
+      // First occurrence is most recent (since ordered by completed_at DESC)
+      userScores.set(game.user_id, {
+        score: game.score,
+        completed_at: game.completed_at,
+      })
+    }
+  })
+
+  const userIds = Array.from(userScores.keys())
+  console.log(`Found ${userIds.length} unique users with games`)
+
+  if (userIds.length === 0) {
+    return []
+  }
+
+  // Get user details
   const { data: users, error: usersError } = await supabase
     .from('users')
     .select('id, name, image')
     .in('id', userIds)
 
   if (usersError) {
-    console.error('⚠️ Error fetching users:', usersError)
-    // Continue without user info if this fails
+    console.error('Error fetching users:', usersError)
+    // Continue without user details - use user_id as name
   }
 
-  // Create a map of user_id to user info
-  const userMap = new Map<string, { name: string; image: string | null }>()
-  if (users) {
-    users.forEach((user: any) => {
-      userMap.set(user.id, { name: user.name || user.id, image: user.image })
-    })
-  }
+  const userMap = new Map((users || []).map(u => [u.id, u]))
+  console.log(`Found ${userMap.size} users in users table`)
 
-  console.log('Sample games:', games.slice(0, 5).map((g: any) => ({
-    id: g.id,
-    user_id: g.user_id,
-    score: g.score,
-    date: g.date
-  })))
-
-  // Map games to leaderboard entries
-  const entries: LeaderboardEntry[] = games.map((game: any) => {
-    const userInfo = userMap.get(game.user_id) || { name: game.user_id, image: null }
+  // Build leaderboard entries from games data
+  const entries: LeaderboardEntry[] = userIds.map((userId) => {
+    const scoreData = userScores.get(userId)!
+    const user = userMap.get(userId)
     return {
-      user_id: game.user_id,
-      name: userInfo.name,
-      image: userInfo.image,
-      score: game.score,
-      completed_at: game.completed_at,
-      has_finished: true, // If they're in the games table, they've finished
+      user_id: userId,
+      name: user?.name || userId,
+      image: user?.image || null,
+      score: scoreData.score,
+      completed_at: scoreData.completed_at,
+      has_finished: true,
       rank: 0, // Will be calculated below
     }
   })
 
-  // Already sorted by score DESC, completed_at ASC in the query
+  // Sort by score descending, then by completed_at ascending (earlier = better rank for ties)
+  entries.sort((a, b) => {
+    if (b.score !== a.score) {
+      return b.score - a.score
+    }
+    return new Date(a.completed_at).getTime() - new Date(b.completed_at).getTime()
+  })
+
   // Assign ranks (same score = same rank)
   entries.forEach((entry, index) => {
     if (index === 0) {

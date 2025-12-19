@@ -220,11 +220,12 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
   // Query games table directly - get ALL games, no filtering
   console.log('=== QUERYING GAMES TABLE FROM SUPABASE (FRESH DATA) ===')
   
-  // Get ALL games from the table - no date filtering, no caching
+  // Get ALL games from the table - no date filtering, no caching, force fresh query
   const { data: allGames, error: gamesError } = await supabase
     .from('games')
     .select('user_id, score, completed_at')
     .order('completed_at', { ascending: false })
+    .limit(10000) // Large limit to ensure we get all games
 
   if (gamesError) {
     console.error('❌ Error fetching games:', gamesError)

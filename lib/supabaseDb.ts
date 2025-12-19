@@ -217,10 +217,10 @@ export async function getMostRecentGameScore(userId: string): Promise<{ score: n
 }
 
 export async function getLeaderboard(date: string, limit: number = 1000): Promise<LeaderboardEntry[]> {
-  // Query games table directly - get most recent game per user
-  console.log('=== QUERYING GAMES TABLE FROM SUPABASE ===')
+  // Query games table directly - get ALL games, no filtering
+  console.log('=== QUERYING GAMES TABLE FROM SUPABASE (FRESH DATA) ===')
   
-  // Get all games ordered by completed_at descending (most recent first)
+  // Get ALL games from the table - no date filtering, no caching
   const { data: allGames, error: gamesError } = await supabase
     .from('games')
     .select('user_id, score, completed_at')
@@ -228,15 +228,17 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
 
   if (gamesError) {
     console.error('❌ Error fetching games:', gamesError)
+    console.error('Error details:', JSON.stringify(gamesError, null, 2))
     throw gamesError
   }
+
+  console.log(`✅ Raw games from Supabase:`, allGames)
+  console.log(`✅ Total games fetched: ${allGames?.length || 0}`)
 
   if (!allGames || allGames.length === 0) {
     console.log('No games found in games table')
     return []
   }
-
-  console.log(`✅ Fetched ${allGames.length} total games from games table`)
 
   // Get the most recent game for each user
   const userScores = new Map<string, { score: number; completed_at: string }>()
@@ -251,7 +253,8 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
   })
 
   const userIds = Array.from(userScores.keys())
-  console.log(`Found ${userIds.length} unique users with games`)
+  console.log(`Found ${userIds.length} unique users:`, userIds)
+  console.log('User scores map:', Array.from(userScores.entries()).map(([id, data]) => ({ user_id: id, score: data.score })))
 
   if (userIds.length === 0) {
     return []

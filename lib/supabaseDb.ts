@@ -233,30 +233,21 @@ export async function getMostRecentGameScore(userId: string): Promise<{ score: n
 }
 
 export async function getLeaderboard(date: string, limit: number = 1000): Promise<LeaderboardEntry[]> {
-  // Simple: Query games table directly from Supabase - always fresh, no caching
+  // Query games table directly from Supabase using anon key - always fresh, no caching
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  // Try service role key first (bypasses RLS), fall back to anon key
-  // Check multiple possible environment variable names
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
-                         process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY ||
-                         process.env.SUPABASE_SERVICE_KEY
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  const supabaseKey = serviceRoleKey || anonKey
   
-  if (!supabaseUrl || !supabaseKey) {
+  if (!supabaseUrl || !anonKey) {
     throw new Error('Supabase environment variables not configured')
   }
   
-  const usingServiceRole = !!serviceRoleKey
   console.log('=== SUPABASE CLIENT CONFIGURATION ===')
-  console.log(`Using: ${usingServiceRole ? '✅ SERVICE ROLE KEY (bypasses RLS)' : '⚠️ ANON KEY (subject to RLS)'}`)
-  console.log(`Service role key present: ${!!serviceRoleKey}`)
-  console.log(`Anon key present: ${!!anonKey}`)
-  console.log(`All env vars: SUPABASE_SERVICE_ROLE_KEY=${!!process.env.SUPABASE_SERVICE_ROLE_KEY}, NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY=${!!process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY}, SUPABASE_SERVICE_KEY=${!!process.env.SUPABASE_SERVICE_KEY}`)
+  console.log('Using: ✅ ANON KEY (subject to RLS policies)')
+  console.log('Anon key present:', !!anonKey)
   
   // Create fresh client for each query
   const { createClient } = await import('@supabase/supabase-js')
-  const client = createClient(supabaseUrl, supabaseKey, {
+  const client = createClient(supabaseUrl, anonKey, {
     auth: { persistSession: false },
   })
   

@@ -208,18 +208,19 @@ export default function Home() {
       await new Promise(resolve => setTimeout(resolve, 2000))
       
       // Fetch fresh leaderboard multiple times to ensure we get the update
+      // Use the same refresh logic that works when manually refreshing
       console.log(`[${timestamp}] Fetching updated leaderboard (attempt 1)...`)
-      await fetchLeaderboard()
+      await fetchLeaderboard(true) // Force refresh
       
       // Wait and fetch again
       await new Promise(resolve => setTimeout(resolve, 1000))
       console.log(`[${timestamp}] Fetching updated leaderboard (attempt 2)...`)
-      await fetchLeaderboard()
+      await fetchLeaderboard(true) // Force refresh
       
       // One more time to be sure
       await new Promise(resolve => setTimeout(resolve, 1000))
       console.log(`[${timestamp}] Fetching updated leaderboard (attempt 3)...`)
-      await fetchLeaderboard()
+      await fetchLeaderboard(true) // Force refresh
     } catch (error) {
       console.error('Failed to save score:', error)
       alert('Failed to save your score. Please try again.')

@@ -352,10 +352,10 @@ export default function Home() {
                       <table className="min-w-full divide-y divide-gray-300">
                     <thead>
                       <tr className="bg-purple-100 border-b-2 border-purple-300">
-                        <th className="text-left py-4 px-6 font-bold text-purple-800 w-24">Rank</th>
-                        <th className="text-left py-4 px-6 font-bold text-purple-800">First Name</th>
-                        <th className="text-right py-4 px-6 font-bold text-purple-800">Score</th>
-                        <th className="text-center py-4 px-6 font-bold text-purple-800">Status</th>
+                        <th className="text-left py-3 px-3 sm:py-4 sm:px-6 font-bold text-purple-800 text-sm sm:text-base w-16 sm:w-24">Rank</th>
+                        <th className="text-left py-3 px-3 sm:py-4 sm:px-6 font-bold text-purple-800 text-sm sm:text-base">Name</th>
+                        <th className="text-right py-3 px-3 sm:py-4 sm:px-6 font-bold text-purple-800 text-sm sm:text-base">Score</th>
+                        <th className="text-center py-3 px-2 sm:py-4 sm:px-6 font-bold text-purple-800 text-sm sm:text-base hidden sm:table-cell">Status</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -375,31 +375,31 @@ export default function Home() {
                                 : 'bg-white text-gray-800 hover:bg-purple-50'
                             } ${isCurrentUser ? 'ring-2 ring-purple-600' : ''}`}
                           >
-                            <td className="py-4 px-6">
-                              <div className="flex items-center gap-2">
+                            <td className="py-3 px-3 sm:py-4 sm:px-6">
+                              <div className="flex items-center gap-1 sm:gap-2">
                                 {entry.rank === 1 ? (
-                                  <span className="text-2xl font-bold">🥇 #1</span>
+                                  <span className="text-lg sm:text-2xl font-bold">🥇 <span className="hidden sm:inline">#1</span></span>
                                 ) : entry.rank === 2 ? (
-                                  <span className="text-2xl font-bold">🥈 #2</span>
+                                  <span className="text-lg sm:text-2xl font-bold">🥈 <span className="hidden sm:inline">#2</span></span>
                                 ) : entry.rank === 3 ? (
-                                  <span className="text-2xl font-bold">🥉 #3</span>
+                                  <span className="text-lg sm:text-2xl font-bold">🥉 <span className="hidden sm:inline">#3</span></span>
                                 ) : (
-                                  <span className="font-bold text-lg">#{entry.rank}</span>
+                                  <span className="font-bold text-base sm:text-lg">#{entry.rank}</span>
                                 )}
                               </div>
                             </td>
-                            <td className="py-4 px-6">
-                              <span className="font-bold text-lg">
+                            <td className="py-3 px-3 sm:py-4 sm:px-6">
+                              <span className="font-bold text-base sm:text-lg">
                                 {firstName}
                                 {isCurrentUser && (
-                                  <span className="ml-2 text-sm opacity-75">(You)</span>
+                                  <span className="ml-1 sm:ml-2 text-xs sm:text-sm opacity-75">(You)</span>
                                 )}
                               </span>
                             </td>
-                            <td className="py-4 px-6 text-right">
-                              <span className="font-bold text-xl">${entry.score.toLocaleString()}</span>
+                            <td className="py-3 px-3 sm:py-4 sm:px-6 text-right">
+                              <span className="font-bold text-base sm:text-xl">${entry.score.toLocaleString()}</span>
                             </td>
-                            <td className="py-4 px-6 text-center">
+                            <td className="py-3 px-2 sm:py-4 sm:px-6 text-center hidden sm:table-cell">
                               {entry.has_finished ? (
                                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800">
                                   ✓ Finished

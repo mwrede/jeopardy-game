@@ -186,11 +186,11 @@ export default function GameBoard({ onGameComplete }: { onGameComplete: (score: 
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           {categories.map((category, categoryIndex) => (
             <div key={categoryIndex} className="space-y-2">
-              <div className="bg-gradient-to-r from-purple-700 to-purple-800 text-white p-4 rounded-lg text-center shadow-md">
-                <h3 className="font-bold text-lg uppercase">{category.name}</h3>
+              <div className="bg-gradient-to-r from-purple-700 to-purple-800 text-white p-3 sm:p-4 rounded-lg text-center shadow-md">
+                <h3 className="font-bold text-base sm:text-lg uppercase">{category.name}</h3>
               </div>
               {category.clues.map((clue, clueIndex) => {
                 const key = `${categoryIndex}-${clueIndex}`
@@ -201,7 +201,7 @@ export default function GameBoard({ onGameComplete }: { onGameComplete: (score: 
                     key={clueIndex}
                     onClick={() => handleClueClick(categoryIndex, clueIndex)}
                     disabled={isAnswered}
-                    className={`w-full p-6 rounded-lg font-bold text-2xl transition-all ${
+                    className={`w-full p-4 sm:p-6 rounded-lg font-bold text-xl sm:text-2xl transition-all ${
                       isAnswered
                         ? 'bg-purple-200 text-purple-400 cursor-not-allowed'
                         : 'bg-purple-500 text-white hover:bg-purple-600 hover:scale-105 shadow-lg'

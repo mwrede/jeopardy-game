@@ -231,25 +231,35 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
     auth: { persistSession: false },
   })
   
-  // Get all games from games table
+  console.log('=== QUERYING GAMES TABLE FROM SUPABASE ===')
+  console.log('Query: SELECT user_id, score, completed_at FROM games ORDER BY completed_at DESC')
+  
+  // Get ALL games from games table - select ALL columns to see everything
   const { data: allGames, error: gamesError } = await client
     .from('games')
-    .select('user_id, score, completed_at')
+    .select('*')
     .order('completed_at', { ascending: false })
 
   if (gamesError) {
-    console.error('Error fetching games:', gamesError)
+    console.error('❌ Error fetching games:', gamesError)
     throw gamesError
   }
 
-  if (!allGames || allGames.length === 0) {
+  console.log(`✅ Raw games from Supabase (${allGames?.length || 0} total):`)
+  if (allGames && allGames.length > 0) {
+    allGames.forEach((game: any, index: number) => {
+      console.log(`  Game ${index + 1}: id=${game.id}, user_id=${game.user_id}, score=${game.score}, completed_at=${game.completed_at}, date=${game.date}`)
+    })
+  } else {
+    console.log('  No games found in Supabase games table')
     return []
   }
 
   // Get most recent game for each user
   const userScores = new Map<string, { score: number; completed_at: string }>()
-  allGames.forEach((game) => {
+  allGames.forEach((game: any) => {
     if (!userScores.has(game.user_id)) {
+      // First occurrence is most recent (since ordered by completed_at DESC)
       userScores.set(game.user_id, {
         score: game.score,
         completed_at: game.completed_at,
@@ -258,6 +268,9 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
   })
 
   const userIds = Array.from(userScores.keys())
+  console.log(`Found ${userIds.length} unique users:`, userIds)
+  console.log('User scores (most recent per user):', Array.from(userScores.entries()).map(([id, data]) => ({ user_id: id, score: data.score })))
+  
   if (userIds.length === 0) {
     return []
   }
@@ -269,6 +282,7 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
     .in('id', userIds)
 
   const userMap = new Map((users || []).map(u => [u.id, u]))
+  console.log(`Found ${userMap.size} user records in users table`)
 
   // Build leaderboard entries from games data
   const entries: LeaderboardEntry[] = userIds.map((userId) => {
@@ -303,7 +317,12 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
     }
   })
 
-  console.log(`Returning ${entries.length} leaderboard entries with scores:`, entries.map(e => ({ user_id: e.user_id, name: e.name, score: e.score, rank: e.rank })))
+  console.log('=== FINAL LEADERBOARD ENTRIES ===')
+  console.log(`Returning ${entries.length} leaderboard entries:`)
+  entries.forEach((e, i) => {
+    console.log(`  ${i + 1}. ${e.name} (${e.user_id}): $${e.score} - Rank #${e.rank}`)
+  })
+  
   return entries.slice(0, limit)
 }
 

@@ -179,15 +179,14 @@ export default function Home() {
   }
 
   const handleGameComplete = async (score: number) => {
-    const timestamp = Date.now()
-    console.log(`[${timestamp}] Game completed, score:`, score)
+    console.log('Game completed, score:', score)
     setFinalScore(score)
     setGameCompleted(true)
     setSaving(true)
 
     try {
       // Save game to Supabase
-      console.log(`[${timestamp}] Saving game to Supabase...`)
+      console.log('Saving game to Supabase...')
       const saveResponse = await fetch('/api/game/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -201,26 +200,27 @@ export default function Home() {
       }
 
       const saveResult = await saveResponse.json()
-      console.log(`[${timestamp}] Game saved successfully:`, saveResult)
+      console.log('Game saved successfully:', saveResult)
       
-      // Wait for Supabase to fully process the insert
-      console.log(`[${timestamp}] Waiting for Supabase to process insert...`)
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // Immediately fetch leaderboard - don't wait, Supabase should be fast
+      console.log('Immediately fetching updated leaderboard (attempt 1)...')
+      await fetchLeaderboard(true)
       
-      // Fetch fresh leaderboard multiple times to ensure we get the update
-      // Use the same refresh logic that works when manually refreshing
-      console.log(`[${timestamp}] Fetching updated leaderboard (attempt 1)...`)
-      await fetchLeaderboard(true) // Force refresh
+      // Fetch multiple times with increasing delays to catch any propagation delay
+      setTimeout(() => {
+        console.log('Fetching leaderboard again (attempt 2)...')
+        fetchLeaderboard(true)
+      }, 500)
       
-      // Wait and fetch again
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      console.log(`[${timestamp}] Fetching updated leaderboard (attempt 2)...`)
-      await fetchLeaderboard(true) // Force refresh
+      setTimeout(() => {
+        console.log('Fetching leaderboard again (attempt 3)...')
+        fetchLeaderboard(true)
+      }, 1500)
       
-      // One more time to be sure
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      console.log(`[${timestamp}] Fetching updated leaderboard (attempt 3)...`)
-      await fetchLeaderboard(true) // Force refresh
+      setTimeout(() => {
+        console.log('Fetching leaderboard again (attempt 4)...')
+        fetchLeaderboard(true)
+      }, 3000)
     } catch (error) {
       console.error('Failed to save score:', error)
       alert('Failed to save your score. Please try again.')
@@ -243,19 +243,26 @@ export default function Home() {
             schema: 'public',
             table: 'games',
           },
-          () => {
-            console.log('New game inserted, refreshing leaderboard')
-            fetchLeaderboard()
+          (payload) => {
+            console.log('🔥 Realtime: New game inserted!', payload.new)
+            // Force refresh immediately when we get realtime notification
+            fetchLeaderboard(true)
+            // Also refresh after a short delay
+            setTimeout(() => fetchLeaderboard(true), 500)
           }
         )
-        .subscribe()
+        .subscribe((status) => {
+          console.log('Realtime subscription status:', status)
+        })
 
-      // Refresh every 3 seconds as fallback
+      // Refresh every 2 seconds as aggressive fallback
       const interval = setInterval(() => {
-        fetchLeaderboard()
-      }, 3000)
+        console.log('Polling: Refreshing leaderboard...')
+        fetchLeaderboard(true)
+      }, 2000)
 
       return () => {
+        console.log('Cleaning up realtime subscription')
         supabase.removeChannel(channel)
         clearInterval(interval)
       }

@@ -47,17 +47,19 @@ CREATE TABLE IF NOT EXISTS submissions (
 DROP VIEW IF EXISTS leaderboard;
 
 -- Create leaderboard view (automatically computed from games table)
--- Shows most recent game for each user (not grouped by date)
+-- Shows ALL games, not just one per user
 CREATE VIEW leaderboard AS
-SELECT DISTINCT ON (g.user_id)
+SELECT
+  g.id as game_id,
   g.user_id,
   u.name,
   u.image,
   g.score,
-  g.completed_at
+  g.completed_at,
+  g.date
 FROM games g
 LEFT JOIN users u ON g.user_id = u.id
-ORDER BY g.user_id, g.completed_at DESC;
+ORDER BY g.score DESC, g.completed_at ASC;
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_games_user_id ON games(user_id);

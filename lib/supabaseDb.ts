@@ -219,11 +219,12 @@ export async function getMostRecentGameScore(userId: string): Promise<{ score: n
 export async function getLeaderboard(date: string, limit: number = 1000): Promise<LeaderboardEntry[]> {
   // Query the leaderboard view directly - this is the source of truth
   console.log('=== QUERYING LEADERBOARD VIEW FROM SUPABASE ===')
-  
+
   const { data: leaderboard, error } = await supabase
     .from('leaderboard')
-    .select('user_id, name, image, score, completed_at')
+    .select('game_id, user_id, name, image, score, completed_at, date')
     .order('score', { ascending: false })
+    .order('completed_at', { ascending: true })
 
   if (error) {
     console.error('❌ Error fetching from leaderboard view:', error)
@@ -236,12 +237,14 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
   console.log('✅ Leaderboard view query successful')
   console.log(`Raw data from view:`, leaderboard)
   console.log(`Number of entries: ${leaderboard?.length || 0}`)
-  
+
   if (leaderboard && leaderboard.length > 0) {
-    console.log('Sample entries:', leaderboard.slice(0, 3).map((e: any) => ({
+    console.log('Sample entries:', leaderboard.slice(0, 5).map((e: any) => ({
+      game_id: e.game_id,
       user_id: e.user_id,
       name: e.name,
-      score: e.score
+      score: e.score,
+      date: e.date
     })))
   }
 
@@ -250,7 +253,7 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
     return []
   }
 
-  // The view returns: user_id, name, image, score, completed_at
+  // The view returns: game_id, user_id, name, image, score, completed_at, date
   // We need to add rank and has_finished
   const entries: LeaderboardEntry[] = leaderboard.map((entry: any) => ({
     user_id: entry.user_id,
@@ -262,14 +265,7 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
     rank: 0, // Will be calculated below
   }))
 
-  // Sort by score descending, then by completed_at ascending (earlier completion = better rank for ties)
-  entries.sort((a, b) => {
-    if (b.score !== a.score) {
-      return b.score - a.score
-    }
-    return new Date(a.completed_at).getTime() - new Date(b.completed_at).getTime()
-  })
-
+  // Already sorted by score DESC, completed_at ASC in the query
   // Assign ranks (same score = same rank)
   entries.forEach((entry, index) => {
     if (index === 0) {

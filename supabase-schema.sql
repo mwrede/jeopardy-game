@@ -43,9 +43,12 @@ CREATE TABLE IF NOT EXISTS submissions (
   date DATE NOT NULL
 );
 
+-- Drop existing leaderboard view if it exists (to avoid column conflicts)
+DROP VIEW IF EXISTS leaderboard;
+
 -- Create leaderboard view (automatically computed from games table)
 -- Shows most recent game for each user (not grouped by date)
-CREATE OR REPLACE VIEW leaderboard AS
+CREATE VIEW leaderboard AS
 SELECT DISTINCT ON (g.user_id)
   g.user_id,
   u.name,

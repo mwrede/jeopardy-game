@@ -192,21 +192,22 @@ export default function Home() {
       const saveResult = await saveResponse.json()
       console.log('Game saved successfully:', saveResult)
 
-      // Aggressively fetch leaderboard multiple times to ensure we get the update
-      // The view might take a moment to reflect the new game
-      console.log('Fetching updated leaderboard after game save...')
+      // Wait a moment for Supabase to process the insert
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      // Aggressively fetch leaderboard with force refresh to wipe cache
+      console.log('Fetching updated leaderboard after game save (FORCE REFRESH)...')
       
-      // Fetch immediately
-      await fetchLeaderboard()
+      // Force refresh immediately - this wipes cache and gets fresh data
+      await fetchLeaderboard(true)
       
-      // Fetch multiple times with delays to catch the view update
-      setTimeout(() => fetchLeaderboard(), 500)
-      setTimeout(() => fetchLeaderboard(), 1000)
-      setTimeout(() => fetchLeaderboard(), 2000)
-      setTimeout(() => fetchLeaderboard(), 3000)
-      setTimeout(() => fetchLeaderboard(), 5000)
+      // Fetch multiple times with force refresh to ensure we get the update
+      setTimeout(() => fetchLeaderboard(true), 1000)
+      setTimeout(() => fetchLeaderboard(true), 2000)
+      setTimeout(() => fetchLeaderboard(true), 3000)
+      setTimeout(() => fetchLeaderboard(true), 5000)
       
-      console.log('Leaderboard refresh scheduled multiple times')
+      console.log('Leaderboard refresh scheduled multiple times with force refresh')
     } catch (error) {
       console.error('Failed to save score:', error)
       alert('Failed to save your score. Please try again.')
@@ -232,20 +233,20 @@ export default function Home() {
           },
           (payload) => {
             console.log('New submission inserted via realtime on results page:', payload.new)
-            // Refresh leaderboard immediately when a new submission is saved
-            fetchLeaderboard()
-            setTimeout(() => fetchLeaderboard(), 500)
-            setTimeout(() => fetchLeaderboard(), 1000)
+            // Force refresh leaderboard immediately when a new submission is saved
+            fetchLeaderboard(true)
+            setTimeout(() => fetchLeaderboard(true), 500)
+            setTimeout(() => fetchLeaderboard(true), 1000)
           }
         )
         .subscribe()
 
-      // Aggressively refresh multiple times to ensure we get the update
-      const refresh1 = setTimeout(() => fetchLeaderboard(), 500)
-      const refresh2 = setTimeout(() => fetchLeaderboard(), 1000)
-      const refresh3 = setTimeout(() => fetchLeaderboard(), 2000)
-      const refresh4 = setTimeout(() => fetchLeaderboard(), 3000)
-      const refresh5 = setTimeout(() => fetchLeaderboard(), 5000)
+      // Aggressively refresh multiple times with force refresh to ensure we get the update
+      const refresh1 = setTimeout(() => fetchLeaderboard(true), 500)
+      const refresh2 = setTimeout(() => fetchLeaderboard(true), 1000)
+      const refresh3 = setTimeout(() => fetchLeaderboard(true), 2000)
+      const refresh4 = setTimeout(() => fetchLeaderboard(true), 3000)
+      const refresh5 = setTimeout(() => fetchLeaderboard(true), 5000)
 
       // Set up auto-refresh every 2 seconds as a fallback
       const interval = setInterval(() => {

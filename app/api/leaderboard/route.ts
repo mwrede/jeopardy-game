@@ -7,7 +7,10 @@ export async function GET(req: NextRequest) {
   try {
     // Get all players regardless of date - force fresh data
     const timestamp = Date.now()
-    console.log(`[${timestamp}] Fetching all leaderboard entries from Supabase view`)
+    const searchParams = req.nextUrl.searchParams
+    const forceRefresh = searchParams.get('refresh') === 'true'
+    
+    console.log(`[${timestamp}] Fetching all leaderboard entries from games table (forceRefresh: ${forceRefresh})`)
     
     // Get all players, not just top 10, so everyone can see their rank
     const leaderboard = await getLeaderboard('', 1000) // Large limit to get all players
@@ -19,13 +22,14 @@ export async function GET(req: NextRequest) {
       entries: leaderboard.map(e => ({ user_id: e.user_id, name: e.name, score: e.score, rank: e.rank }))
     })
 
-    // Add cache headers to prevent caching - ensure fresh data
+    // Add aggressive cache headers to prevent ANY caching
     return NextResponse.json(leaderboard, {
       headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0',
         'Pragma': 'no-cache',
         'Expires': '0',
         'X-Timestamp': timestamp.toString(),
+        'X-Force-Refresh': forceRefresh ? 'true' : 'false',
       }
     })
   } catch (error) {

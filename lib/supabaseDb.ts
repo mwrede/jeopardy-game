@@ -148,19 +148,30 @@ export async function saveGame(username: string, score: number, date: string): P
       console.log('Submission saved successfully for realtime updates:', submissionResult)
     }
     
-    // Verify the game was saved by querying it back
+    // Verify the game was saved by querying it back - wait a moment first
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
     const { data: verifyData, error: verifyError } = await supabase
       .from('games')
       .select('*')
       .eq('user_id', username)
-      .eq('date', date)
       .order('completed_at', { ascending: false })
       .limit(1)
     
     if (verifyError) {
       console.error('Error verifying saved game:', verifyError)
     } else {
-      console.log('Verified saved game exists:', verifyData?.length || 0, 'game(s) found')
+      const savedGame = verifyData?.[0]
+      if (savedGame) {
+        console.log('✅ Verified saved game exists:', {
+          id: savedGame.id,
+          user_id: savedGame.user_id,
+          score: savedGame.score,
+          completed_at: savedGame.completed_at
+        })
+      } else {
+        console.warn('⚠️ Saved game not found in verification query')
+      }
     }
   } catch (error) {
     console.error('Unexpected error in saveGame:', error)

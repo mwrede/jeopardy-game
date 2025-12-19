@@ -197,82 +197,37 @@ export async function getMostRecentGameScore(userId: string): Promise<{ score: n
 }
 
 export async function getLeaderboard(date: string, limit: number = 1000): Promise<LeaderboardEntry[]> {
-  // Try to query the leaderboard view first
-  console.log('Querying leaderboard view from Supabase...')
+  // Query the leaderboard view directly - this is the source of truth
+  console.log('=== QUERYING LEADERBOARD VIEW FROM SUPABASE ===')
   
-  let leaderboard: any[] | null = null
-  let error: any = null
-
-  // First attempt: query the view with explicit columns
-  const viewResult = await supabase
+  const { data: leaderboard, error } = await supabase
     .from('leaderboard')
     .select('user_id, name, image, score, completed_at')
     .order('score', { ascending: false })
 
-  if (viewResult.error) {
-    console.error('Error fetching from leaderboard view:', viewResult.error)
-    console.error('Error code:', viewResult.error.code)
-    console.error('Error message:', viewResult.error.message)
-    error = viewResult.error
-  } else {
-    leaderboard = viewResult.data
-    console.log(`Successfully fetched ${leaderboard?.length || 0} entries from leaderboard view`)
+  if (error) {
+    console.error('❌ Error fetching from leaderboard view:', error)
+    console.error('Error code:', error.code)
+    console.error('Error message:', error.message)
+    console.error('Error details:', JSON.stringify(error, null, 2))
+    throw error
   }
 
-  // If view query failed or returned no data, fall back to querying games table directly
-  if (error || !leaderboard || leaderboard.length === 0) {
-    console.log('Falling back to querying games table directly...')
-    
-    // Get all games, get most recent per user
-    const { data: allGames, error: gamesError } = await supabase
-      .from('games')
-      .select('user_id, score, completed_at')
-      .order('completed_at', { ascending: false })
+  console.log('✅ Leaderboard view query successful')
+  console.log(`Raw data from view:`, leaderboard)
+  console.log(`Number of entries: ${leaderboard?.length || 0}`)
+  
+  if (leaderboard && leaderboard.length > 0) {
+    console.log('Sample entries:', leaderboard.slice(0, 3).map((e: any) => ({
+      user_id: e.user_id,
+      name: e.name,
+      score: e.score
+    })))
+  }
 
-    if (gamesError) {
-      console.error('Error fetching games table:', gamesError)
-      throw gamesError
-    }
-
-    if (!allGames || allGames.length === 0) {
-      console.log('No games found in games table')
-      return []
-    }
-
-    // Get most recent game per user
-    const userScores = new Map<string, { score: number; completed_at: string }>()
-    allGames.forEach((game) => {
-      if (!userScores.has(game.user_id)) {
-        userScores.set(game.user_id, {
-          score: game.score,
-          completed_at: game.completed_at,
-        })
-      }
-    })
-
-    // Get user details
-    const userIds = Array.from(userScores.keys())
-    const { data: users } = await supabase
-      .from('users')
-      .select('id, name, image')
-      .in('id', userIds)
-
-    const userMap = new Map((users || []).map(u => [u.id, u]))
-
-    // Build leaderboard from games table
-    leaderboard = userIds.map((userId) => {
-      const scoreData = userScores.get(userId)!
-      const user = userMap.get(userId)
-      return {
-        user_id: userId,
-        name: user?.name || userId,
-        image: user?.image || null,
-        score: scoreData.score,
-        completed_at: scoreData.completed_at,
-      }
-    })
-    
-    console.log(`Built leaderboard from games table: ${leaderboard.length} entries`)
+  if (!leaderboard || leaderboard.length === 0) {
+    console.warn('⚠️ Leaderboard view returned no data - view may be empty or query issue')
+    return []
   }
 
   // The view returns: user_id, name, image, score, completed_at

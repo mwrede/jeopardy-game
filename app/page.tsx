@@ -200,19 +200,19 @@ export default function Home() {
     if (gameCompleted && !saving) {
       console.log('Game completed, setting up leaderboard auto-refresh and realtime subscription')
       
-      // Set up realtime subscription to games table
+      // Set up realtime subscription to submissions table for instant leaderboard updates
       const channel = supabase
-        .channel('games-changes-results')
+        .channel('submissions-changes-results')
         .on(
           'postgres_changes',
           {
             event: 'INSERT',
             schema: 'public',
-            table: 'games',
+            table: 'submissions',
           },
           (payload) => {
-            console.log('New game inserted via realtime on results page:', payload.new)
-            // Refresh leaderboard when a new game is saved - multiple times to ensure we catch it
+            console.log('New submission inserted via realtime on results page:', payload.new)
+            // Refresh leaderboard immediately when a new submission is saved
             fetchLeaderboard()
             setTimeout(() => fetchLeaderboard(), 500)
             setTimeout(() => fetchLeaderboard(), 1000)

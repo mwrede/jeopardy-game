@@ -33,6 +33,16 @@ CREATE TABLE IF NOT EXISTS games (
   date DATE NOT NULL
 );
 
+-- Create submissions table for tracking Final Jeopardy submissions
+-- This table will be used for realtime leaderboard updates
+CREATE TABLE IF NOT EXISTS submissions (
+  id SERIAL PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  score INTEGER NOT NULL,
+  submitted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  date DATE NOT NULL
+);
+
 -- Create leaderboard view (automatically computed from games table)
 -- Shows most recent game for each user (not grouped by date)
 CREATE OR REPLACE VIEW leaderboard AS
@@ -50,11 +60,15 @@ ORDER BY g.user_id, g.completed_at DESC;
 CREATE INDEX IF NOT EXISTS idx_games_user_id ON games(user_id);
 CREATE INDEX IF NOT EXISTS idx_games_date ON games(date);
 CREATE INDEX IF NOT EXISTS idx_games_user_date ON games(user_id, date);
+CREATE INDEX IF NOT EXISTS idx_submissions_user_id ON submissions(user_id);
+CREATE INDEX IF NOT EXISTS idx_submissions_submitted_at ON submissions(submitted_at DESC);
+CREATE INDEX IF NOT EXISTS idx_submissions_date ON submissions(date);
 
 -- Enable Row Level Security (RLS)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE questions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE games ENABLE ROW LEVEL SECURITY;
+ALTER TABLE submissions ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies
 -- Users can read all users
@@ -84,6 +98,16 @@ CREATE POLICY "Users can read all games" ON games
 -- Users can insert their own games
 DROP POLICY IF EXISTS "Users can insert their own games" ON games;
 CREATE POLICY "Users can insert their own games" ON games
+  FOR INSERT WITH CHECK (true);
+
+-- Everyone can read submissions (for leaderboard)
+DROP POLICY IF EXISTS "Everyone can read submissions" ON submissions;
+CREATE POLICY "Everyone can read submissions" ON submissions
+  FOR SELECT USING (true);
+
+-- Users can insert their own submissions
+DROP POLICY IF EXISTS "Users can insert their own submissions" ON submissions;
+CREATE POLICY "Users can insert their own submissions" ON submissions
   FOR INSERT WITH CHECK (true);
 
 -- Insert questions from CSV data

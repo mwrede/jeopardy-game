@@ -101,29 +101,48 @@ export default function Home() {
     try {
       // Add cache-busting timestamp to ensure fresh data from Supabase
       const timestamp = Date.now()
-      console.log(`[${timestamp}] Fetching leaderboard from Supabase...`)
-      
+      console.log(`[${timestamp}] ===== FETCHING LEADERBOARD =====`)
+
       const leaderboardResponse = await fetch(`/api/leaderboard?t=${timestamp}`, {
         cache: 'no-store', // Force no caching
       })
-      
+
+      console.log(`[${timestamp}] Response status:`, leaderboardResponse.status, leaderboardResponse.statusText)
+
       if (!leaderboardResponse.ok) {
+        const errorText = await leaderboardResponse.text()
+        console.error(`[${timestamp}] Leaderboard fetch failed:`, errorText)
         throw new Error(`Failed to fetch leaderboard: ${leaderboardResponse.statusText}`)
       }
-      
+
       const leaderboardData = await leaderboardResponse.json()
-      
+      console.log(`[${timestamp}] Raw leaderboard data:`, leaderboardData)
+
+      // Check if response has an error property
+      if (leaderboardData.error) {
+        console.error(`[${timestamp}] Leaderboard API returned error:`, leaderboardData.error, leaderboardData.details)
+        throw new Error(leaderboardData.error)
+      }
+
       // Ensure we have an array
       const validLeaderboard = Array.isArray(leaderboardData) ? leaderboardData : []
-      
-      console.log(`[${timestamp}] Leaderboard fetched:`, { 
+
+      console.log(`[${timestamp}] Leaderboard processed:`, {
         count: validLeaderboard.length,
-        user_ids: validLeaderboard.map((e: any) => e.user_id),
-        scores: validLeaderboard.map((e: any) => e.score),
-        current_user_id: session?.user?.id
+        entries: validLeaderboard.map((e: any) => ({
+          user_id: e.user_id,
+          name: e.name,
+          score: e.score,
+          rank: e.rank
+        }))
       })
-      
-      setLeaderboard(validLeaderboard) // Show all entries
+
+      if (validLeaderboard.length > 0) {
+        console.log(`[${timestamp}] ✅ Setting leaderboard with ${validLeaderboard.length} entries`)
+        setLeaderboard(validLeaderboard) // Show all entries
+      } else {
+        console.warn(`[${timestamp}] ⚠️ Leaderboard is empty!`)
+      }
 
       // Find user's rank from leaderboard data
       if (session?.user?.id) {
@@ -141,7 +160,8 @@ export default function Home() {
         }
       }
     } catch (error) {
-      console.error('Failed to fetch leaderboard:', error)
+      console.error('❌ LEADERBOARD FETCH ERROR:', error)
+      console.error('Error details:', error instanceof Error ? error.message : String(error))
       // Don't clear the leaderboard on error, keep what we have
     }
   }
@@ -310,6 +330,7 @@ export default function Home() {
                 {leaderboard.length === 0 ? (
                   <div className="text-center py-8 text-gray-600">
                     <p>Loading leaderboard...</p>
+                    <p className="text-sm mt-2">If this persists, check the browser console for errors.</p>
                   </div>
                 ) : (
                 <div className="overflow-x-auto -mx-4 sm:mx-0">

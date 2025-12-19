@@ -68,7 +68,10 @@ export async function createOrUpdateUser(
 export async function saveGame(username: string, score: number, date: string): Promise<void> {
   // Use service role key for saving to ensure it works and bypasses RLS
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  // Check multiple possible environment variable names
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
+                         process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY ||
+                         process.env.SUPABASE_SERVICE_KEY
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   const supabaseKey = serviceRoleKey || anonKey
   
@@ -238,7 +241,10 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
   // Simple: Query games table directly from Supabase - always fresh, no caching
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   // Try service role key first (bypasses RLS), fall back to anon key
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  // Check multiple possible environment variable names
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
+                         process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY ||
+                         process.env.SUPABASE_SERVICE_KEY
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   const supabaseKey = serviceRoleKey || anonKey
   
@@ -251,6 +257,7 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
   console.log(`Using: ${usingServiceRole ? '✅ SERVICE ROLE KEY (bypasses RLS)' : '⚠️ ANON KEY (subject to RLS)'}`)
   console.log(`Service role key present: ${!!serviceRoleKey}`)
   console.log(`Anon key present: ${!!anonKey}`)
+  console.log(`All env vars: SUPABASE_SERVICE_ROLE_KEY=${!!process.env.SUPABASE_SERVICE_ROLE_KEY}, NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY=${!!process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY}, SUPABASE_SERVICE_KEY=${!!process.env.SUPABASE_SERVICE_KEY}`)
   
   // Create fresh client for each query
   const { createClient } = await import('@supabase/supabase-js')
@@ -262,11 +269,12 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
   console.log('Query: SELECT * FROM games ORDER BY completed_at DESC')
   console.log('Note: If RLS is enabled, it may filter results. Check Supabase RLS policies.')
   
-  // Get ALL games from games table - select ALL columns to see everything
+  // Get ALL games from games table - select ALL columns, NO LIMIT
   // Try without order first to see if ordering is causing issues
+  console.log('Querying games table with NO LIMIT to get ALL games...')
   let { data: allGames, error: gamesError } = await client
     .from('games')
-    .select('*')
+    .select('*', { count: 'exact' })
 
   if (gamesError) {
     console.error('❌ Error on initial query:', gamesError)

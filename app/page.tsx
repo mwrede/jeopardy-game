@@ -212,13 +212,11 @@ export default function Home() {
     }
   }
 
-  // Auto-refresh leaderboard when game is completed
+  // Set up realtime subscription to refresh leaderboard when games table updates
   useEffect(() => {
     if (gameCompleted && !saving) {
-      console.log('Game completed, setting up leaderboard auto-refresh and realtime subscription')
+      console.log('Setting up realtime subscription to games table')
       
-      // Set up realtime subscription to games table for instant leaderboard updates
-      // This is the source of truth, so listen directly to it
       const channel = supabase
         .channel('games-changes-results')
         .on(
@@ -228,49 +226,24 @@ export default function Home() {
             schema: 'public',
             table: 'games',
           },
-          (payload) => {
-            console.log('New game inserted via realtime on results page:', payload.new)
-            // Force refresh leaderboard immediately when a new game is saved
-            fetchLeaderboard(true)
-            setTimeout(() => fetchLeaderboard(true), 500)
-            setTimeout(() => fetchLeaderboard(true), 1000)
+          () => {
+            console.log('New game inserted, refreshing leaderboard')
+            fetchLeaderboard()
           }
         )
         .subscribe()
 
-      // Aggressively refresh multiple times with force refresh to ensure we get the update
-      const refresh1 = setTimeout(() => fetchLeaderboard(true), 500)
-      const refresh2 = setTimeout(() => fetchLeaderboard(true), 1000)
-      const refresh3 = setTimeout(() => fetchLeaderboard(true), 2000)
-      const refresh4 = setTimeout(() => fetchLeaderboard(true), 3000)
-      const refresh5 = setTimeout(() => fetchLeaderboard(true), 5000)
-
-      // Set up auto-refresh every 2 seconds as a fallback
+      // Refresh every 3 seconds as fallback
       const interval = setInterval(() => {
-        console.log('Auto-refreshing leaderboard (fallback)...')
         fetchLeaderboard()
-      }, 2000)
-
-      // Also refresh when page comes into focus
-      const handleFocus = () => {
-        console.log('Page focused, refreshing leaderboard')
-        fetchLeaderboard()
-      }
-      window.addEventListener('focus', handleFocus)
+      }, 3000)
 
       return () => {
-        // Clean up subscription and intervals
         supabase.removeChannel(channel)
-        clearTimeout(refresh1)
-        clearTimeout(refresh2)
-        clearTimeout(refresh3)
-        clearTimeout(refresh4)
-        clearTimeout(refresh5)
         clearInterval(interval)
-        window.removeEventListener('focus', handleFocus)
       }
     }
-  }, [gameCompleted, saving, session])
+  }, [gameCompleted, saving])
 
   // Show loading state while checking auth
   // But don't wait forever - if it takes too long, show the page anyway

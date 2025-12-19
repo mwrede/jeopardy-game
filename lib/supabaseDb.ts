@@ -217,29 +217,54 @@ export async function getMostRecentGameScore(userId: string): Promise<{ score: n
 }
 
 export async function getLeaderboard(date: string, limit: number = 1000): Promise<LeaderboardEntry[]> {
-  // Query games table directly - get ALL games, no filtering
-  console.log('=== QUERYING GAMES TABLE FROM SUPABASE (FRESH DATA) ===')
+  // Query games table DIRECTLY from Supabase - no caching, no views, just raw data
+  console.log('=== QUERYING GAMES TABLE DIRECTLY FROM SUPABASE ===')
+  console.log('Timestamp:', new Date().toISOString())
   
-  // Get ALL games from the table - no date filtering, no caching, force fresh query
-  const { data: allGames, error: gamesError } = await supabase
+  // Create a fresh Supabase client instance to avoid any caching
+  const { createClient } = await import('@supabase/supabase-js')
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Supabase environment variables not configured')
+  }
+  
+  // Create a fresh client for this query with no session persistence
+  const freshClient = createClient(supabaseUrl, supabaseKey, {
+    auth: { persistSession: false },
+    db: { schema: 'public' },
+  })
+  
+  // Get ALL games directly from the games table - no filters, no caching, fresh query every time
+  console.log('Executing direct query to games table...')
+  const { data: allGames, error: gamesError } = await freshClient
     .from('games')
     .select('user_id, score, completed_at')
     .order('completed_at', { ascending: false })
-    .limit(10000) // Large limit to ensure we get all games
 
   if (gamesError) {
     console.error('❌ Error fetching games:', gamesError)
+    console.error('Error code:', gamesError.code)
+    console.error('Error message:', gamesError.message)
     console.error('Error details:', JSON.stringify(gamesError, null, 2))
     throw gamesError
   }
 
-  console.log(`✅ Raw games from Supabase:`, allGames)
+  console.log(`✅ Raw games data from Supabase:`, allGames)
   console.log(`✅ Total games fetched: ${allGames?.length || 0}`)
 
   if (!allGames || allGames.length === 0) {
     console.log('No games found in games table')
     return []
   }
+
+  // Log all games to see exactly what we got
+  console.log('All games from Supabase:', allGames.map((g: any) => ({
+    user_id: g.user_id,
+    score: g.score,
+    completed_at: g.completed_at
+  })))
 
   // Get the most recent game for each user
   const userScores = new Map<string, { score: number; completed_at: string }>()
@@ -261,8 +286,8 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
     return []
   }
 
-  // Get user details
-  const { data: users, error: usersError } = await supabase
+  // Get user details using fresh client
+  const { data: users, error: usersError } = await freshClient
     .from('users')
     .select('id, name, image')
     .in('id', userIds)

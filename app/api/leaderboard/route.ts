@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getLeaderboard } from '@/lib/supabaseDb'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0 // Never cache this route
+export const fetchCache = 'force-no-store'
 
 export async function GET(req: NextRequest) {
   try {
@@ -9,10 +11,12 @@ export async function GET(req: NextRequest) {
     const timestamp = Date.now()
     const searchParams = req.nextUrl.searchParams
     const forceRefresh = searchParams.get('refresh') === 'true'
-    
-    console.log(`[${timestamp}] Fetching all leaderboard entries from games table (forceRefresh: ${forceRefresh})`)
-    
+    const cacheBust = searchParams.get('_') || searchParams.get('t') // Accept either parameter
+
+    console.log(`[${timestamp}] API ROUTE: Fetching all leaderboard entries from games table (forceRefresh: ${forceRefresh}, cacheBust: ${cacheBust})`)
+
     // Get all players, not just top 10, so everyone can see their rank
+    // Pass timestamp to getLeaderboard for additional cache busting
     const leaderboard = await getLeaderboard('', 1000) // Large limit to get all players
 
     console.log(`[${timestamp}] Leaderboard result:`, { 

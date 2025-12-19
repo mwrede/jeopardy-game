@@ -218,29 +218,42 @@ export async function getMostRecentGameScore(userId: string): Promise<{ score: n
 
 export async function getLeaderboard(date: string, limit: number = 1000): Promise<LeaderboardEntry[]> {
   // Query games table DIRECTLY from Supabase - no caching, no views, just raw data
-  console.log('=== QUERYING GAMES TABLE DIRECTLY FROM SUPABASE ===')
+  const timestamp = Date.now()
+  console.log(`=== [${timestamp}] QUERYING GAMES TABLE DIRECTLY FROM SUPABASE ===`)
   console.log('Timestamp:', new Date().toISOString())
-  
+
   // Create a fresh Supabase client instance to avoid any caching
   const { createClient } = await import('@supabase/supabase-js')
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  
+
   if (!supabaseUrl || !supabaseKey) {
+    console.error('❌ Supabase environment variables not configured!')
     throw new Error('Supabase environment variables not configured')
   }
-  
-  // Create a fresh client for this query with no session persistence
+
+  console.log(`Using Supabase URL: ${supabaseUrl}`)
+
+  // Create a fresh client for this query with no session persistence and no caching
   const freshClient = createClient(supabaseUrl, supabaseKey, {
-    auth: { persistSession: false },
+    auth: { persistSession: false, autoRefreshToken: false },
     db: { schema: 'public' },
+    global: {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    },
   })
-  
+
   // Get ALL games directly from the games table - no filters, no caching, fresh query every time
-  console.log('Executing direct query to games table...')
+  // Add a random filter that always evaluates to true to bust any query caching
+  console.log(`[${timestamp}] Executing direct query to games table...`)
   const { data: allGames, error: gamesError } = await freshClient
     .from('games')
     .select('user_id, score, completed_at')
+    .gte('score', -999999) // Cache-busting filter that always matches
     .order('completed_at', { ascending: false })
 
   if (gamesError) {

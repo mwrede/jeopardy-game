@@ -112,6 +112,26 @@ export async function saveGame(username: string, score: number, date: string): P
 
     console.log('Game saved successfully:', data)
     
+    // Also insert into submissions table for realtime leaderboard updates
+    const submissionData = {
+      user_id: username,
+      score: integerScore,
+      date,
+    }
+
+    console.log('Inserting submission data for realtime updates:', submissionData)
+    const { data: submissionResult, error: submissionError } = await supabase
+      .from('submissions')
+      .insert(submissionData)
+      .select()
+
+    if (submissionError) {
+      console.error('Error saving submission to Supabase:', submissionError)
+      // Don't throw - game is saved, submission is just for realtime
+    } else {
+      console.log('Submission saved successfully for realtime updates:', submissionResult)
+    }
+    
     // Verify the game was saved by querying it back
     const { data: verifyData, error: verifyError } = await supabase
       .from('games')

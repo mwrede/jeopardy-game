@@ -125,12 +125,15 @@ export default function GameBoard({ onGameComplete }: { onGameComplete: (score: 
       const key = `${currentClue.categoryIndex}-${currentClue.clueIndex}`
       setAnsweredClues(new Set([...answeredClues, key]))
       // Round to ensure score is always an integer
-      setScore(Math.round(score + pointsEarned))
+      const newScore = Math.round(score + pointsEarned)
+      console.log(`Score update: ${score} + ${pointsEarned} = ${newScore}`)
+      setScore(newScore)
     }
     setCurrentClue(null)
   }
 
   const handleFinalJeopardyComplete = (finalScore: number) => {
+    console.log('Final Jeopardy complete - passing final score to game:', finalScore)
     onGameComplete(finalScore)
   }
 
@@ -160,6 +163,7 @@ export default function GameBoard({ onGameComplete }: { onGameComplete: (score: 
   }
 
   if (showFinalJeopardy && finalJeopardy) {
+    console.log('Entering Final Jeopardy with cumulative score:', score)
     return (
       <FinalJeopardy
         currentScore={score}

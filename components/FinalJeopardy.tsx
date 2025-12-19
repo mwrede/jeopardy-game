@@ -64,10 +64,16 @@ export default function FinalJeopardy({ currentScore, onComplete, finalJeopardy 
 
     // Round to ensure score is always an integer
     const finalScore = Math.round(correct ? currentScore + wager : currentScore - wager)
-    console.log('Final Jeopardy completed. Final score:', finalScore, 'Current score:', currentScore, 'Wager:', wager, 'Correct:', correct)
-    
+    console.log('===== FINAL JEOPARDY SCORE CALCULATION =====')
+    console.log('Cumulative score before Final Jeopardy:', currentScore)
+    console.log('Wager:', wager)
+    console.log('Answer correct?', correct)
+    console.log('Calculation:', correct ? `${currentScore} + ${wager}` : `${currentScore} - ${wager}`)
+    console.log('FINAL SCORE TO BE SAVED:', finalScore)
+    console.log('============================================')
+
     setTimeout(() => {
-      console.log('Calling onComplete with final score:', finalScore)
+      console.log('Passing final score to save:', finalScore)
       onComplete(finalScore)
     }, 3000)
   }

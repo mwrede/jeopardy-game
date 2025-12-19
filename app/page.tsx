@@ -97,14 +97,21 @@ export default function Home() {
     return () => clearTimeout(timeout)
   }, [session])
 
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = async (forceRefresh: boolean = false) => {
     try {
       // Add cache-busting timestamp to ensure fresh data from Supabase
       const timestamp = Date.now()
-      console.log(`[${timestamp}] ===== FETCHING LEADERBOARD =====`)
+      const cacheBuster = forceRefresh ? `&_=${timestamp}&refresh=true` : `?t=${timestamp}`
+      console.log(`[${timestamp}] ===== FETCHING LEADERBOARD (forceRefresh: ${forceRefresh}) =====`)
 
-      const leaderboardResponse = await fetch(`/api/leaderboard?t=${timestamp}`, {
-        cache: 'no-store', // Force no caching
+      // Force fresh fetch - no cache at all, especially on force refresh
+      const leaderboardResponse = await fetch(`/api/leaderboard${cacheBuster}`, {
+        cache: 'no-store',
+        headers: forceRefresh ? {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        } : undefined,
       })
 
       console.log(`[${timestamp}] Response status:`, leaderboardResponse.status, leaderboardResponse.statusText)
@@ -136,6 +143,11 @@ export default function Home() {
           rank: e.rank
         }))
       })
+
+      // Clear old leaderboard first if force refresh
+      if (forceRefresh) {
+        setLeaderboard([])
+      }
 
       if (validLeaderboard.length > 0) {
         console.log(`[${timestamp}] ✅ Setting leaderboard with ${validLeaderboard.length} entries`)

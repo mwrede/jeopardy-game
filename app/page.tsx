@@ -179,14 +179,15 @@ export default function Home() {
   }
 
   const handleGameComplete = async (score: number) => {
-    console.log('Game completed, score:', score)
+    const timestamp = Date.now()
+    console.log(`[${timestamp}] Game completed, score:`, score)
     setFinalScore(score)
     setGameCompleted(true)
     setSaving(true)
 
     try {
       // Save game to Supabase
-      console.log('Saving game to Supabase...')
+      console.log(`[${timestamp}] Saving game to Supabase...`)
       const saveResponse = await fetch('/api/game/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -200,21 +201,25 @@ export default function Home() {
       }
 
       const saveResult = await saveResponse.json()
-      console.log('Game saved successfully:', saveResult)
+      console.log(`[${timestamp}] Game saved successfully:`, saveResult)
       
-      // Wait a bit longer for Supabase to fully process and make it available for queries
-      console.log('Waiting for Supabase to process insert...')
+      // Wait for Supabase to fully process the insert
+      console.log(`[${timestamp}] Waiting for Supabase to process insert...`)
       await new Promise(resolve => setTimeout(resolve, 2000))
       
-      // Fetch fresh leaderboard from Supabase - force refresh with timestamp
-      console.log('Fetching updated leaderboard...')
+      // Fetch fresh leaderboard multiple times to ensure we get the update
+      console.log(`[${timestamp}] Fetching updated leaderboard (attempt 1)...`)
       await fetchLeaderboard()
       
-      // Also fetch again after a short delay to ensure we get the update
-      setTimeout(() => {
-        console.log('Second leaderboard fetch to ensure update is visible...')
-        fetchLeaderboard()
-      }, 1000)
+      // Wait and fetch again
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      console.log(`[${timestamp}] Fetching updated leaderboard (attempt 2)...`)
+      await fetchLeaderboard()
+      
+      // One more time to be sure
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      console.log(`[${timestamp}] Fetching updated leaderboard (attempt 3)...`)
+      await fetchLeaderboard()
     } catch (error) {
       console.error('Failed to save score:', error)
       alert('Failed to save your score. Please try again.')

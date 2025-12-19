@@ -232,13 +232,31 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
   })
   
   console.log('=== QUERYING GAMES TABLE FROM SUPABASE ===')
-  console.log('Query: SELECT user_id, score, completed_at FROM games ORDER BY completed_at DESC')
+  console.log('Query: SELECT * FROM games ORDER BY completed_at DESC')
+  console.log('Note: If RLS is enabled, it may filter results. Check Supabase RLS policies.')
   
   // Get ALL games from games table - select ALL columns to see everything
-  const { data: allGames, error: gamesError } = await client
+  // Try without order first to see if ordering is causing issues
+  let { data: allGames, error: gamesError } = await client
     .from('games')
     .select('*')
-    .order('completed_at', { ascending: false })
+
+  if (gamesError) {
+    console.error('❌ Error on initial query:', gamesError)
+    console.error('This might be an RLS issue. Check Supabase RLS policies for the games table.')
+    throw gamesError
+  }
+
+  console.log(`✅ Initial query returned ${allGames?.length || 0} games (before ordering)`)
+  
+  // Now order them
+  if (allGames && allGames.length > 0) {
+    allGames = allGames.sort((a: any, b: any) => {
+      const dateA = new Date(a.completed_at).getTime()
+      const dateB = new Date(b.completed_at).getTime()
+      return dateB - dateA // Descending
+    })
+  }
 
   if (gamesError) {
     console.error('❌ Error fetching games:', gamesError)

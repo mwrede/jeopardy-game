@@ -253,19 +253,17 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
 
   console.log(`✅ Initial query returned ${allGames?.length || 0} games (before ordering)`)
   
+  if (!allGames || allGames.length === 0) {
+    console.log('⚠️ No games found in Supabase games table')
+    return []
+  }
+  
   // Now order them
-  if (allGames && allGames.length > 0) {
-    allGames = allGames.sort((a: any, b: any) => {
-      const dateA = new Date(a.completed_at).getTime()
-      const dateB = new Date(b.completed_at).getTime()
-      return dateB - dateA // Descending
-    })
-  }
-
-  if (gamesError) {
-    console.error('❌ Error fetching games:', gamesError)
-    throw gamesError
-  }
+  allGames = allGames.sort((a: any, b: any) => {
+    const dateA = new Date(a.completed_at).getTime()
+    const dateB = new Date(b.completed_at).getTime()
+    return dateB - dateA // Descending
+  })
 
   console.log(`✅ Raw games from Supabase (${allGames?.length || 0} total):`)
   if (allGames && allGames.length > 0) {

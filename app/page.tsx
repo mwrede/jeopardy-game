@@ -232,37 +232,64 @@ export default function Home() {
   // Set up realtime subscription to refresh leaderboard when games table updates
   useEffect(() => {
     if (gameCompleted && !saving) {
-      console.log('Setting up realtime subscription to games table')
+      console.log('🔴 Setting up realtime subscription to games table...')
       
       const channel = supabase
-        .channel('games-changes-results')
+        .channel('games-changes-results', {
+          config: {
+            broadcast: { self: true },
+            presence: { key: 'leaderboard' }
+          }
+        })
         .on(
           'postgres_changes',
           {
             event: 'INSERT',
             schema: 'public',
             table: 'games',
+            filter: '*', // Listen to all inserts
           },
           (payload) => {
-            console.log('🔥 Realtime: New game inserted!', payload.new)
+            console.log('🔥🔥🔥 REALTIME EVENT: New game inserted!', payload.new)
+            console.log('🔥 Game details:', {
+              id: payload.new.id,
+              user_id: payload.new.user_id,
+              score: payload.new.score,
+              completed_at: payload.new.completed_at
+            })
             // Force refresh immediately when we get realtime notification
+            console.log('🔥 Immediately refreshing leaderboard...')
             fetchLeaderboard(true)
-            // Also refresh after a short delay
-            setTimeout(() => fetchLeaderboard(true), 500)
+            // Also refresh after a short delay to ensure we get it
+            setTimeout(() => {
+              console.log('🔥 Second refresh after realtime event...')
+              fetchLeaderboard(true)
+            }, 500)
+            setTimeout(() => {
+              console.log('🔥 Third refresh after realtime event...')
+              fetchLeaderboard(true)
+            }, 1500)
           }
         )
-        .subscribe((status) => {
-          console.log('Realtime subscription status:', status)
+        .subscribe((status, err) => {
+          if (err) {
+            console.error('❌ Realtime subscription error:', err)
+          } else {
+            console.log('✅ Realtime subscription status:', status)
+            if (status === 'SUBSCRIBED') {
+              console.log('✅✅✅ Successfully subscribed to games table realtime!')
+            }
+          }
         })
 
-      // Refresh every 2 seconds as aggressive fallback
+      // Refresh every 3 seconds as fallback (less aggressive since realtime should handle it)
       const interval = setInterval(() => {
-        console.log('Polling: Refreshing leaderboard...')
+        console.log('⏰ Polling fallback: Refreshing leaderboard...')
         fetchLeaderboard(true)
-      }, 2000)
+      }, 3000)
 
       return () => {
-        console.log('Cleaning up realtime subscription')
+        console.log('🧹 Cleaning up realtime subscription and interval')
         supabase.removeChannel(channel)
         clearInterval(interval)
       }

@@ -66,26 +66,21 @@ export async function createOrUpdateUser(
 }
 
 export async function saveGame(username: string, score: number, date: string): Promise<void> {
-  // Use service role key for saving to ensure it works and bypasses RLS
+  // Use anon key for saving - RLS policies should allow inserts
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  // Check multiple possible environment variable names
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
-                         process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY ||
-                         process.env.SUPABASE_SERVICE_KEY
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  const supabaseKey = serviceRoleKey || anonKey
   
-  if (!supabaseUrl || !supabaseKey) {
+  if (!supabaseUrl || !anonKey) {
     throw new Error('Supabase environment variables not configured')
   }
   
   const { createClient } = await import('@supabase/supabase-js')
-  const supabase = createClient(supabaseUrl, supabaseKey, {
+  const supabase = createClient(supabaseUrl, anonKey, {
     auth: { persistSession: false },
   })
   
   console.log('=== SAVING GAME TO SUPABASE ===')
-  console.log(`Using ${serviceRoleKey ? 'SERVICE ROLE KEY' : 'ANON KEY'} for save`)
+  console.log('Using ANON KEY for save (subject to RLS policies)')
   
   try {
     // Ensure score is an integer

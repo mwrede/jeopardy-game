@@ -66,6 +66,24 @@ export async function createOrUpdateUser(
 }
 
 export async function saveGame(username: string, score: number, date: string): Promise<void> {
+  // Use service role key for saving to ensure it works and bypasses RLS
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const supabaseKey = serviceRoleKey || anonKey
+  
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Supabase environment variables not configured')
+  }
+  
+  const { createClient } = await import('@supabase/supabase-js')
+  const supabase = createClient(supabaseUrl, supabaseKey, {
+    auth: { persistSession: false },
+  })
+  
+  console.log('=== SAVING GAME TO SUPABASE ===')
+  console.log(`Using ${serviceRoleKey ? 'SERVICE ROLE KEY' : 'ANON KEY'} for save`)
+  
   try {
     // Ensure score is an integer
     const integerScore = Math.round(score)

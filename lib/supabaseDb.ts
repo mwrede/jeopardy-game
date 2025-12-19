@@ -239,7 +239,13 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
   console.log(`Number of games: ${games?.length || 0}`)
 
   if (!games || games.length === 0) {
-    console.warn('⚠️ Games table returned no data')
+    console.error('⚠️ Games table returned no data!')
+    console.error('This is likely a Row Level Security (RLS) issue.')
+    console.error('Check Supabase dashboard:')
+    console.error('1. Go to Table Editor → games table')
+    console.error('2. Click on "RLS" icon to see policies')
+    console.error('3. Ensure "Enable read access for all users" policy exists with USING (true)')
+    console.error('Or run the SQL in fix-rls-policies.sql to fix this')
     return []
   }
 

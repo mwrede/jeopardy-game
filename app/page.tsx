@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
@@ -267,7 +267,7 @@ export default function Home() {
         clearInterval(interval)
       }
     }
-  }, [gameCompleted, saving])
+  }, [gameCompleted, saving, fetchLeaderboard])
 
   // Show loading state while checking auth
   // But don't wait forever - if it takes too long, show the page anyway

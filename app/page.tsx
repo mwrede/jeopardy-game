@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
@@ -179,48 +179,47 @@ export default function Home() {
   }
 
   const handleGameComplete = async (score: number) => {
-    console.log('Game completed, score:', score)
+    console.log('handleGameComplete called with score:', score)
     setFinalScore(score)
     setGameCompleted(true)
     setSaving(true)
 
     try {
-      // Save game to Supabase
-      console.log('Saving game to Supabase...')
+      console.log('Saving game score to Supabase:', score)
       const saveResponse = await fetch('/api/game/save', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ score }),
-        cache: 'no-store',
       })
 
       if (!saveResponse.ok) {
         const errorData = await saveResponse.json().catch(() => ({}))
-        throw new Error(errorData.details || errorData.error || 'Failed to save score')
+        const errorMessage = errorData.details || errorData.error || `Failed to save score: ${saveResponse.statusText}`
+        console.error('Save failed:', errorMessage)
+        throw new Error(errorMessage)
       }
 
       const saveResult = await saveResponse.json()
       console.log('Game saved successfully:', saveResult)
+
+      // Wait a moment for Supabase to process the insert
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      // Aggressively fetch leaderboard with force refresh to wipe cache
+      console.log('Fetching updated leaderboard after game save (FORCE REFRESH)...')
       
-      // Immediately fetch leaderboard - don't wait, Supabase should be fast
-      console.log('Immediately fetching updated leaderboard (attempt 1)...')
+      // Force refresh immediately - this wipes cache and gets fresh data
       await fetchLeaderboard(true)
       
-      // Fetch multiple times with increasing delays to catch any propagation delay
-      setTimeout(() => {
-        console.log('Fetching leaderboard again (attempt 2)...')
-        fetchLeaderboard(true)
-      }, 500)
+      // Fetch multiple times with force refresh to ensure we get the update
+      setTimeout(() => fetchLeaderboard(true), 1000)
+      setTimeout(() => fetchLeaderboard(true), 2000)
+      setTimeout(() => fetchLeaderboard(true), 3000)
+      setTimeout(() => fetchLeaderboard(true), 5000)
       
-      setTimeout(() => {
-        console.log('Fetching leaderboard again (attempt 3)...')
-        fetchLeaderboard(true)
-      }, 1500)
-      
-      setTimeout(() => {
-        console.log('Fetching leaderboard again (attempt 4)...')
-        fetchLeaderboard(true)
-      }, 3000)
+      console.log('Leaderboard refresh scheduled multiple times with force refresh')
     } catch (error) {
       console.error('Failed to save score:', error)
       alert('Failed to save your score. Please try again.')
@@ -229,72 +228,64 @@ export default function Home() {
     }
   }
 
-  // Set up realtime subscription to refresh leaderboard when games table updates
+  // Auto-refresh leaderboard when game is completed
   useEffect(() => {
     if (gameCompleted && !saving) {
-      console.log('🔴 Setting up realtime subscription to games table...')
+      console.log('Game completed, setting up leaderboard auto-refresh and realtime subscription')
       
+      // Set up realtime subscription to submissions table for instant leaderboard updates
       const channel = supabase
-        .channel('games-changes-results', {
-          config: {
-            broadcast: { self: true },
-            presence: { key: 'leaderboard' }
-          }
-        })
+        .channel('submissions-changes-results')
         .on(
           'postgres_changes',
           {
             event: 'INSERT',
             schema: 'public',
-            table: 'games',
-            filter: '*', // Listen to all inserts
+            table: 'submissions',
           },
           (payload) => {
-            console.log('🔥🔥🔥 REALTIME EVENT: New game inserted!', payload.new)
-            console.log('🔥 Game details:', {
-              id: payload.new.id,
-              user_id: payload.new.user_id,
-              score: payload.new.score,
-              completed_at: payload.new.completed_at
-            })
-            // Force refresh immediately when we get realtime notification
-            console.log('🔥 Immediately refreshing leaderboard...')
+            console.log('New submission inserted via realtime on results page:', payload.new)
+            // Force refresh leaderboard immediately when a new submission is saved
             fetchLeaderboard(true)
-            // Also refresh after a short delay to ensure we get it
-            setTimeout(() => {
-              console.log('🔥 Second refresh after realtime event...')
-              fetchLeaderboard(true)
-            }, 500)
-            setTimeout(() => {
-              console.log('🔥 Third refresh after realtime event...')
-              fetchLeaderboard(true)
-            }, 1500)
+            setTimeout(() => fetchLeaderboard(true), 500)
+            setTimeout(() => fetchLeaderboard(true), 1000)
           }
         )
-        .subscribe((status, err) => {
-          if (err) {
-            console.error('❌ Realtime subscription error:', err)
-          } else {
-            console.log('✅ Realtime subscription status:', status)
-            if (status === 'SUBSCRIBED') {
-              console.log('✅✅✅ Successfully subscribed to games table realtime!')
-            }
-          }
-        })
+        .subscribe()
 
-      // Refresh every 3 seconds as fallback (less aggressive since realtime should handle it)
+      // Aggressively refresh multiple times with force refresh to ensure we get the update
+      const refresh1 = setTimeout(() => fetchLeaderboard(true), 500)
+      const refresh2 = setTimeout(() => fetchLeaderboard(true), 1000)
+      const refresh3 = setTimeout(() => fetchLeaderboard(true), 2000)
+      const refresh4 = setTimeout(() => fetchLeaderboard(true), 3000)
+      const refresh5 = setTimeout(() => fetchLeaderboard(true), 5000)
+
+      // Set up auto-refresh every 2 seconds as a fallback
       const interval = setInterval(() => {
-        console.log('⏰ Polling fallback: Refreshing leaderboard...')
-        fetchLeaderboard(true)
-      }, 3000)
+        console.log('Auto-refreshing leaderboard (fallback)...')
+        fetchLeaderboard()
+      }, 2000)
+
+      // Also refresh when page comes into focus
+      const handleFocus = () => {
+        console.log('Page focused, refreshing leaderboard')
+        fetchLeaderboard()
+      }
+      window.addEventListener('focus', handleFocus)
 
       return () => {
-        console.log('🧹 Cleaning up realtime subscription and interval')
+        // Clean up subscription and intervals
         supabase.removeChannel(channel)
+        clearTimeout(refresh1)
+        clearTimeout(refresh2)
+        clearTimeout(refresh3)
+        clearTimeout(refresh4)
+        clearTimeout(refresh5)
         clearInterval(interval)
+        window.removeEventListener('focus', handleFocus)
       }
     }
-  }, [gameCompleted, saving, fetchLeaderboard])
+  }, [gameCompleted, saving, session])
 
   // Show loading state while checking auth
   // But don't wait forever - if it takes too long, show the page anyway

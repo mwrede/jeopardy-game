@@ -9,15 +9,13 @@ export async function GET(req: NextRequest) {
     const timestamp = Date.now()
     const searchParams = req.nextUrl.searchParams
     const forceRefresh = searchParams.get('refresh') === 'true'
-    const random = searchParams.get('r')
     
-    console.log(`[${timestamp}] ===== LEADERBOARD API CALLED =====`)
-    console.log(`[${timestamp}] Query params: refresh=${forceRefresh}, r=${random}, t=${searchParams.get('t')}`)
+    console.log(`[${timestamp}] Fetching all leaderboard entries from games table (forceRefresh: ${forceRefresh})`)
     
     // Get all players, not just top 10, so everyone can see their rank
     const leaderboard = await getLeaderboard('', 1000) // Large limit to get all players
 
-    console.log(`[${timestamp}] ✅ Leaderboard result:`, { 
+    console.log(`[${timestamp}] Leaderboard result:`, { 
       count: leaderboard.length,
       user_ids: leaderboard.map(e => e.user_id),
       scores: leaderboard.map(e => e.score),
@@ -32,11 +30,10 @@ export async function GET(req: NextRequest) {
         'Expires': '0',
         'X-Timestamp': timestamp.toString(),
         'X-Force-Refresh': forceRefresh ? 'true' : 'false',
-        'X-Random': random || 'none',
       }
     })
   } catch (error) {
-    console.error('❌ Error fetching leaderboard:', error)
+    console.error('Error fetching leaderboard:', error)
     return NextResponse.json({ 
       error: 'Failed to fetch leaderboard',
       details: error instanceof Error ? error.message : 'Unknown error'

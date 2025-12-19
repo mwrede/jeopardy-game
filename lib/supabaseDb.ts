@@ -66,22 +66,6 @@ export async function createOrUpdateUser(
 }
 
 export async function saveGame(username: string, score: number, date: string): Promise<void> {
-  // Use anon key for saving - RLS policies should allow inserts
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  
-  if (!supabaseUrl || !anonKey) {
-    throw new Error('Supabase environment variables not configured')
-  }
-  
-  const { createClient } = await import('@supabase/supabase-js')
-  const supabase = createClient(supabaseUrl, anonKey, {
-    auth: { persistSession: false },
-  })
-  
-  console.log('=== SAVING GAME TO SUPABASE ===')
-  console.log('Using ANON KEY for save (subject to RLS policies)')
-  
   try {
     // Ensure score is an integer
     const integerScore = Math.round(score)
@@ -148,30 +132,19 @@ export async function saveGame(username: string, score: number, date: string): P
       console.log('Submission saved successfully for realtime updates:', submissionResult)
     }
     
-    // Verify the game was saved by querying it back - wait a moment first
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
+    // Verify the game was saved by querying it back
     const { data: verifyData, error: verifyError } = await supabase
       .from('games')
       .select('*')
       .eq('user_id', username)
+      .eq('date', date)
       .order('completed_at', { ascending: false })
       .limit(1)
     
     if (verifyError) {
       console.error('Error verifying saved game:', verifyError)
     } else {
-      const savedGame = verifyData?.[0]
-      if (savedGame) {
-        console.log('✅ Verified saved game exists:', {
-          id: savedGame.id,
-          user_id: savedGame.user_id,
-          score: savedGame.score,
-          completed_at: savedGame.completed_at
-        })
-      } else {
-        console.warn('⚠️ Saved game not found in verification query')
-      }
+      console.log('Verified saved game exists:', verifyData?.length || 0, 'game(s) found')
     }
   } catch (error) {
     console.error('Unexpected error in saveGame:', error)
@@ -244,68 +217,58 @@ export async function getMostRecentGameScore(userId: string): Promise<{ score: n
 }
 
 export async function getLeaderboard(date: string, limit: number = 1000): Promise<LeaderboardEntry[]> {
-  // Query games table directly from Supabase using anon key - always fresh, no caching
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  // Query games table DIRECTLY from Supabase - no caching, no views, just raw data
+  console.log('=== QUERYING GAMES TABLE DIRECTLY FROM SUPABASE ===')
+  console.log('Timestamp:', new Date().toISOString())
   
-  if (!supabaseUrl || !anonKey) {
+  // Create a fresh Supabase client instance to avoid any caching
+  const { createClient } = await import('@supabase/supabase-js')
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  
+  if (!supabaseUrl || !supabaseKey) {
     throw new Error('Supabase environment variables not configured')
   }
   
-  console.log('=== SUPABASE CLIENT CONFIGURATION ===')
-  console.log('Using: ✅ ANON KEY (subject to RLS policies)')
-  console.log('Anon key present:', !!anonKey)
-  
-  // Create fresh client for each query
-  const { createClient } = await import('@supabase/supabase-js')
-  const client = createClient(supabaseUrl, anonKey, {
+  // Create a fresh client for this query with no session persistence
+  const freshClient = createClient(supabaseUrl, supabaseKey, {
     auth: { persistSession: false },
+    db: { schema: 'public' },
   })
   
-  console.log('=== QUERYING GAMES TABLE FROM SUPABASE ===')
-  console.log('Query: SELECT * FROM games ORDER BY completed_at DESC')
-  console.log('Note: If RLS is enabled, it may filter results. Check Supabase RLS policies.')
-  
-  // Get ALL games from games table - select ALL columns, NO LIMIT
-  // Try without order first to see if ordering is causing issues
-  console.log('Querying games table with NO LIMIT to get ALL games...')
-  let { data: allGames, error: gamesError } = await client
+  // Get ALL games directly from the games table - no filters, no caching, fresh query every time
+  console.log('Executing direct query to games table...')
+  const { data: allGames, error: gamesError } = await freshClient
     .from('games')
-    .select('*', { count: 'exact' })
+    .select('user_id, score, completed_at')
+    .order('completed_at', { ascending: false })
 
   if (gamesError) {
-    console.error('❌ Error on initial query:', gamesError)
-    console.error('This might be an RLS issue. Check Supabase RLS policies for the games table.')
+    console.error('❌ Error fetching games:', gamesError)
+    console.error('Error code:', gamesError.code)
+    console.error('Error message:', gamesError.message)
+    console.error('Error details:', JSON.stringify(gamesError, null, 2))
     throw gamesError
   }
 
-  console.log(`✅ Initial query returned ${allGames?.length || 0} games (before ordering)`)
-  
+  console.log(`✅ Raw games data from Supabase:`, allGames)
+  console.log(`✅ Total games fetched: ${allGames?.length || 0}`)
+
   if (!allGames || allGames.length === 0) {
-    console.log('⚠️ No games found in Supabase games table')
-    return []
-  }
-  
-  // Now order them
-  allGames = allGames.sort((a: any, b: any) => {
-    const dateA = new Date(a.completed_at).getTime()
-    const dateB = new Date(b.completed_at).getTime()
-    return dateB - dateA // Descending
-  })
-
-  console.log(`✅ Raw games from Supabase (${allGames?.length || 0} total):`)
-  if (allGames && allGames.length > 0) {
-    allGames.forEach((game: any, index: number) => {
-      console.log(`  Game ${index + 1}: id=${game.id}, user_id=${game.user_id}, score=${game.score}, completed_at=${game.completed_at}, date=${game.date}`)
-    })
-  } else {
-    console.log('  No games found in Supabase games table')
+    console.log('No games found in games table')
     return []
   }
 
-  // Get most recent game for each user
+  // Log all games to see exactly what we got
+  console.log('All games from Supabase:', allGames.map((g: any) => ({
+    user_id: g.user_id,
+    score: g.score,
+    completed_at: g.completed_at
+  })))
+
+  // Get the most recent game for each user
   const userScores = new Map<string, { score: number; completed_at: string }>()
-  allGames.forEach((game: any) => {
+  allGames.forEach((game) => {
     if (!userScores.has(game.user_id)) {
       // First occurrence is most recent (since ordered by completed_at DESC)
       userScores.set(game.user_id, {
@@ -317,25 +280,25 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
 
   const userIds = Array.from(userScores.keys())
   console.log(`Found ${userIds.length} unique users:`, userIds)
-  console.log('User scores (most recent per user):', Array.from(userScores.entries()).map(([id, data]) => ({ 
-    user_id: id, 
-    score: data.score, 
-    game_id: data.game_id,
-    completed_at: data.completed_at 
-  })))
-  
+  console.log('User scores map:', Array.from(userScores.entries()).map(([id, data]) => ({ user_id: id, score: data.score })))
+
   if (userIds.length === 0) {
     return []
   }
 
-  // Get user details
-  const { data: users } = await client
+  // Get user details using fresh client
+  const { data: users, error: usersError } = await freshClient
     .from('users')
     .select('id, name, image')
     .in('id', userIds)
 
+  if (usersError) {
+    console.error('Error fetching users:', usersError)
+    // Continue without user details - use user_id as name
+  }
+
   const userMap = new Map((users || []).map(u => [u.id, u]))
-  console.log(`Found ${userMap.size} user records in users table`)
+  console.log(`Found ${userMap.size} users in users table`)
 
   // Build leaderboard entries from games data
   const entries: LeaderboardEntry[] = userIds.map((userId) => {
@@ -370,12 +333,7 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
     }
   })
 
-  console.log('=== FINAL LEADERBOARD ENTRIES ===')
-  console.log(`Returning ${entries.length} leaderboard entries:`)
-  entries.forEach((e, i) => {
-    console.log(`  ${i + 1}. ${e.name} (${e.user_id}): $${e.score} - Rank #${e.rank}`)
-  })
-  
+  console.log(`Returning ${entries.length} leaderboard entries with scores:`, entries.map(e => ({ user_id: e.user_id, name: e.name, score: e.score, rank: e.rank })))
   return entries.slice(0, limit)
 }
 

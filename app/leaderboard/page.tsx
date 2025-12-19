@@ -91,52 +91,24 @@ export default function LeaderboardPage() {
       // Fetch immediately
       fetchLeaderboard()
       
-      // Set up realtime subscription to games table for instant leaderboard updates
-      // This is the source of truth, so listen directly to it
-      console.log('🔴 Setting up realtime subscription to games table on leaderboard page...')
+      // Set up realtime subscription to submissions table for instant leaderboard updates
+      console.log('Setting up realtime subscription to submissions table...')
       const channel = supabase
-        .channel('games-changes-leaderboard', {
-          config: {
-            broadcast: { self: true },
-            presence: { key: 'leaderboard-page' }
-          }
-        })
+        .channel('submissions-changes')
         .on(
           'postgres_changes',
           {
             event: 'INSERT',
             schema: 'public',
-            table: 'games',
-            filter: '*', // Listen to all inserts
+            table: 'submissions',
           },
           (payload) => {
-            console.log('🔥🔥🔥 REALTIME EVENT on leaderboard page: New game inserted!', payload.new)
-            console.log('🔥 Game details:', {
-              id: payload.new.id,
-              user_id: payload.new.user_id,
-              score: payload.new.score,
-              completed_at: payload.new.completed_at
-            })
-            // Force refresh leaderboard immediately when a new game is saved
-            console.log('🔥 Immediately refreshing leaderboard...')
+            console.log('New submission inserted via realtime:', payload.new)
+            // Refresh leaderboard immediately when a new submission is saved
             fetchLeaderboard()
-            // Also refresh after a short delay
-            setTimeout(() => {
-              console.log('🔥 Second refresh after realtime event...')
-              fetchLeaderboard()
-            }, 500)
           }
         )
-        .subscribe((status, err) => {
-          if (err) {
-            console.error('❌ Realtime subscription error on leaderboard page:', err)
-          } else {
-            console.log('✅ Realtime subscription status on leaderboard page:', status)
-            if (status === 'SUBSCRIBED') {
-              console.log('✅✅✅ Successfully subscribed to games table realtime on leaderboard page!')
-            }
-          }
-        })
+        .subscribe()
 
       // Also refresh every 5 seconds as a fallback
       const interval = setInterval(() => {

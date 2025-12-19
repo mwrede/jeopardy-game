@@ -217,18 +217,24 @@ export async function getMostRecentGameScore(userId: string): Promise<{ score: n
 }
 
 export async function getLeaderboard(date: string, limit: number = 1000): Promise<LeaderboardEntry[]> {
-  // Query games table DIRECTLY from Supabase - no caching, no views, just raw data
+  // Query games table DIRECTLY from Supabase - verify we're using correct credentials
   console.log('=== QUERYING GAMES TABLE DIRECTLY FROM SUPABASE ===')
   console.log('Timestamp:', new Date().toISOString())
   
-  // Create a fresh Supabase client instance to avoid any caching
-  const { createClient } = await import('@supabase/supabase-js')
+  // Verify environment variables are set
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   
+  console.log('Supabase URL configured:', supabaseUrl ? `YES (${supabaseUrl.substring(0, 30)}...)` : 'NO')
+  console.log('Supabase Key configured:', supabaseKey ? `YES (${supabaseKey.substring(0, 20)}...)` : 'NO')
+  
   if (!supabaseUrl || !supabaseKey) {
+    console.error('❌ Supabase environment variables not configured!')
     throw new Error('Supabase environment variables not configured')
   }
+  
+  // Create a fresh Supabase client instance to avoid any caching
+  const { createClient } = await import('@supabase/supabase-js')
   
   // Create a fresh client for this query with no session persistence
   const freshClient = createClient(supabaseUrl, supabaseKey, {
@@ -236,8 +242,9 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
     db: { schema: 'public' },
   })
   
+  console.log('Created fresh Supabase client, querying games table...')
+  
   // Get ALL games directly from the games table - no filters, no caching, fresh query every time
-  console.log('Executing direct query to games table...')
   const { data: allGames, error: gamesError } = await freshClient
     .from('games')
     .select('user_id, score, completed_at')
@@ -251,11 +258,11 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
     throw gamesError
   }
 
-  console.log(`✅ Raw games data from Supabase:`, allGames)
+  console.log(`✅ Raw games data from Supabase:`, JSON.stringify(allGames, null, 2))
   console.log(`✅ Total games fetched: ${allGames?.length || 0}`)
 
   if (!allGames || allGames.length === 0) {
-    console.log('No games found in games table')
+    console.log('⚠️ No games found in games table - this might be a RLS issue or empty table')
     return []
   }
 

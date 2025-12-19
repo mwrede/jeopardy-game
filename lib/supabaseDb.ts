@@ -220,14 +220,19 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
   // Simple: Query games table directly from Supabase - always fresh, no caching
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   // Try service role key first (bypasses RLS), fall back to anon key
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const supabaseKey = serviceRoleKey || anonKey
   
   if (!supabaseUrl || !supabaseKey) {
     throw new Error('Supabase environment variables not configured')
   }
   
-  const usingServiceRole = !!process.env.SUPABASE_SERVICE_ROLE_KEY
-  console.log(`Using ${usingServiceRole ? 'SERVICE ROLE KEY (bypasses RLS)' : 'ANON KEY (subject to RLS)'}`)
+  const usingServiceRole = !!serviceRoleKey
+  console.log('=== SUPABASE CLIENT CONFIGURATION ===')
+  console.log(`Using: ${usingServiceRole ? '✅ SERVICE ROLE KEY (bypasses RLS)' : '⚠️ ANON KEY (subject to RLS)'}`)
+  console.log(`Service role key present: ${!!serviceRoleKey}`)
+  console.log(`Anon key present: ${!!anonKey}`)
   
   // Create fresh client for each query
   const { createClient } = await import('@supabase/supabase-js')

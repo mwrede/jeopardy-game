@@ -186,10 +186,12 @@ export default function Home() {
 
     try {
       // Save game to Supabase
+      console.log('Saving game to Supabase...')
       const saveResponse = await fetch('/api/game/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ score }),
+        cache: 'no-store',
       })
 
       if (!saveResponse.ok) {
@@ -197,13 +199,22 @@ export default function Home() {
         throw new Error(errorData.details || errorData.error || 'Failed to save score')
       }
 
-      console.log('Game saved to Supabase')
+      const saveResult = await saveResponse.json()
+      console.log('Game saved successfully:', saveResult)
       
-      // Wait a moment for Supabase to process
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Wait a bit longer for Supabase to fully process and make it available for queries
+      console.log('Waiting for Supabase to process insert...')
+      await new Promise(resolve => setTimeout(resolve, 2000))
       
-      // Fetch fresh leaderboard from Supabase
+      // Fetch fresh leaderboard from Supabase - force refresh with timestamp
+      console.log('Fetching updated leaderboard...')
       await fetchLeaderboard()
+      
+      // Also fetch again after a short delay to ensure we get the update
+      setTimeout(() => {
+        console.log('Second leaderboard fetch to ensure update is visible...')
+        fetchLeaderboard()
+      }, 1000)
     } catch (error) {
       console.error('Failed to save score:', error)
       alert('Failed to save your score. Please try again.')

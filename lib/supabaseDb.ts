@@ -217,53 +217,74 @@ export async function getMostRecentGameScore(userId: string): Promise<{ score: n
 }
 
 export async function getLeaderboard(date: string, limit: number = 1000): Promise<LeaderboardEntry[]> {
-  // Query the leaderboard view directly - this is the source of truth
-  console.log('=== QUERYING LEADERBOARD VIEW FROM SUPABASE ===')
+  // Query games table directly with user info
+  console.log('=== QUERYING GAMES TABLE FROM SUPABASE ===')
 
-  const { data: leaderboard, error } = await supabase
-    .from('leaderboard')
-    .select('game_id, user_id, name, image, score, completed_at, date')
+  // Fetch all games with user information
+  const { data: games, error: gamesError } = await supabase
+    .from('games')
+    .select('id, user_id, score, completed_at, date')
     .order('score', { ascending: false })
     .order('completed_at', { ascending: true })
 
-  if (error) {
-    console.error('❌ Error fetching from leaderboard view:', error)
-    console.error('Error code:', error.code)
-    console.error('Error message:', error.message)
-    console.error('Error details:', JSON.stringify(error, null, 2))
-    throw error
+  if (gamesError) {
+    console.error('❌ Error fetching from games table:', gamesError)
+    console.error('Error code:', gamesError.code)
+    console.error('Error message:', gamesError.message)
+    console.error('Error details:', JSON.stringify(gamesError, null, 2))
+    throw gamesError
   }
 
-  console.log('✅ Leaderboard view query successful')
-  console.log(`Raw data from view:`, leaderboard)
-  console.log(`Number of entries: ${leaderboard?.length || 0}`)
+  console.log('✅ Games table query successful')
+  console.log(`Number of games: ${games?.length || 0}`)
 
-  if (leaderboard && leaderboard.length > 0) {
-    console.log('Sample entries:', leaderboard.slice(0, 5).map((e: any) => ({
-      game_id: e.game_id,
-      user_id: e.user_id,
-      name: e.name,
-      score: e.score,
-      date: e.date
-    })))
-  }
-
-  if (!leaderboard || leaderboard.length === 0) {
-    console.warn('⚠️ Leaderboard view returned no data - view may be empty or query issue')
+  if (!games || games.length === 0) {
+    console.warn('⚠️ Games table returned no data')
     return []
   }
 
-  // The view returns: game_id, user_id, name, image, score, completed_at, date
-  // We need to add rank and has_finished
-  const entries: LeaderboardEntry[] = leaderboard.map((entry: any) => ({
-    user_id: entry.user_id,
-    name: entry.name || entry.user_id, // Use user_id as name if name is null
-    image: entry.image || null,
-    score: entry.score,
-    completed_at: entry.completed_at,
-    has_finished: true, // If they're in the leaderboard, they've finished
-    rank: 0, // Will be calculated below
-  }))
+  // Get unique user IDs to fetch user info
+  const userIds = [...new Set(games.map((g: any) => g.user_id))]
+
+  // Fetch user information for all players
+  const { data: users, error: usersError } = await supabase
+    .from('users')
+    .select('id, name, image')
+    .in('id', userIds)
+
+  if (usersError) {
+    console.error('⚠️ Error fetching users:', usersError)
+    // Continue without user info if this fails
+  }
+
+  // Create a map of user_id to user info
+  const userMap = new Map<string, { name: string; image: string | null }>()
+  if (users) {
+    users.forEach((user: any) => {
+      userMap.set(user.id, { name: user.name || user.id, image: user.image })
+    })
+  }
+
+  console.log('Sample games:', games.slice(0, 5).map((g: any) => ({
+    id: g.id,
+    user_id: g.user_id,
+    score: g.score,
+    date: g.date
+  })))
+
+  // Map games to leaderboard entries
+  const entries: LeaderboardEntry[] = games.map((game: any) => {
+    const userInfo = userMap.get(game.user_id) || { name: game.user_id, image: null }
+    return {
+      user_id: game.user_id,
+      name: userInfo.name,
+      image: userInfo.image,
+      score: game.score,
+      completed_at: game.completed_at,
+      has_finished: true, // If they're in the games table, they've finished
+      rank: 0, // Will be calculated below
+    }
+  })
 
   // Already sorted by score DESC, completed_at ASC in the query
   // Assign ranks (same score = same rank)

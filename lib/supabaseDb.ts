@@ -219,6 +219,8 @@ export async function getMostRecentGameScore(userId: string): Promise<{ score: n
 export async function getLeaderboard(date: string, limit: number = 1000): Promise<LeaderboardEntry[]> {
   // Query games table directly with user info
   console.log('=== QUERYING GAMES TABLE FROM SUPABASE ===')
+  console.log('Supabase URL configured:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'YES ✓' : 'NO ✗')
+  console.log('Supabase Key configured:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'YES ✓' : 'NO ✗')
 
   // Fetch all games with user information
   const { data: games, error: gamesError } = await supabase
@@ -226,6 +228,12 @@ export async function getLeaderboard(date: string, limit: number = 1000): Promis
     .select('id, user_id, score, completed_at, date')
     .order('score', { ascending: false })
     .order('completed_at', { ascending: true })
+
+  console.log('Raw Supabase query result:')
+  console.log('- data:', games)
+  console.log('- error:', gamesError)
+  console.log('- data is array?', Array.isArray(games))
+  console.log('- data length:', games?.length)
 
   if (gamesError) {
     console.error('❌ Error fetching from games table:', gamesError)

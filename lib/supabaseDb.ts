@@ -219,11 +219,15 @@ export async function getMostRecentGameScore(userId: string): Promise<{ score: n
 export async function getLeaderboard(date: string, limit: number = 1000): Promise<LeaderboardEntry[]> {
   // Simple: Query games table directly from Supabase - always fresh, no caching
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  // Try service role key first (bypasses RLS), fall back to anon key
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   
   if (!supabaseUrl || !supabaseKey) {
     throw new Error('Supabase environment variables not configured')
   }
+  
+  const usingServiceRole = !!process.env.SUPABASE_SERVICE_ROLE_KEY
+  console.log(`Using ${usingServiceRole ? 'SERVICE ROLE KEY (bypasses RLS)' : 'ANON KEY (subject to RLS)'}`)
   
   // Create fresh client for each query
   const { createClient } = await import('@supabase/supabase-js')
